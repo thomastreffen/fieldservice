@@ -11,13 +11,15 @@ import { cn } from "@/lib/utils";
 import { UnplannedJobsStrip } from "@/components/resource/UnplannedJobsStrip";
 import {
   ChevronLeft, ChevronRight, Plus, RotateCcw,
-  Users, Briefcase, CalendarDays, Calendar, List, Phone, Clock,
+  Users, Briefcase, CalendarDays, Calendar, List, Phone, Clock, Loader2,
 } from "lucide-react";
 import {
-  addWeeks, addDays, addMonths, startOfWeek, endOfWeek, format, parseISO,
+  addWeeks, addDays, addMonths, startOfWeek, endOfWeek, format, parseISO, isToday, isTomorrow,
 } from "date-fns";
 import { nb } from "date-fns/locale";
 import { useCanDo } from "@/hooks/useCanDo";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { JOB_TYPE_LABELS } from "@/lib/domain-labels";
 
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/daygrid";
@@ -54,6 +56,7 @@ const VIEW_OPTIONS: { value: CalendarViewType; label: string; icon: typeof Calen
 export default function RessursplanleggerPage() {
   const { user, tenantId } = useAuth();
   const { canDo } = useCanDo();
+  const isMobile = useIsMobile();
   const calendarRef = useRef<FullCalendar>(null);
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [events, setEvents] = useState<CalendarEvent[]>([]);
@@ -416,6 +419,135 @@ export default function RessursplanleggerPage() {
     );
   }, [technicians]);
 
+  // ── Mobil listevisning ────────────────────────────────────────────────────
+  if (isMobile) {
+    const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+    const weekEnd = endOfWeek(new Date(), { weekStartsOn: 1 });
+
+    const weekEvents = events
+      .filter((e) => {
+        const d = parseISO(e.start_time);
+        return d >= weekStart && d <= weekEnd;
+      })
+      .sort((a, b) => a.start_time.localeCompare(b.start_time));
+
+    const grouped = new Map<string, CalendarEvent[]>();
+    for (const e of weekEvents) {
+      const key = e.start_time.slice(0, 10);
+      if (!grouped.has(key)) grouped.set(key, []);
+      grouped.get(key)!.push(e);
+    }
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold tracking-tight">Ressursplanlegger</h1>
+            <p className="text-sm text-muted-foreground capitalize">
+              Uke {format(weekStart, "w", { locale: nb })} · {format(weekStart, "d. MMM", { locale: nb })} – {format(weekEnd, "d. MMM", { locale: nb })}
+            </p>
+          </div>
+          {canDo("ressursplan.schedule") && (
+            <Button onClick={() => openNewEvent()} size="sm" className="gap-1.5 shrink-0">
+              <Plus className="h-4 w-4" />Ny
+            </Button>
+          )}
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : weekEvents.length === 0 ? (
+          <div className="text-center py-12 text-sm text-muted-foreground">
+            Ingen hendelser denne uken
+          </div>
+        ) : (
+          <div className="space-y-5">
+            {Array.from(grouped.entries()).map(([dateKey, dayEvents]) => {
+              const date = parseISO(dateKey + "T12:00:00");
+              const label = isToday(date) ? "I dag" : isTomorrow(date) ? "I morgen" : format(date, "EEEE d. MMM", { locale: nb });
+              return (
+                <div key={dateKey}>
+                  <p className={cn(
+                    "text-xs font-semibold uppercase tracking-wider mb-2",
+                    isToday(date) ? "text-primary" : "text-muted-foreground"
+                  )}>
+                    {label}
+                  </p>
+                  <div className="space-y-2">
+                    {dayEvents.map((event) => {
+                      const techColor = event.technician_ids.length > 0
+                        ? technicians.find((t) => t.id === event.technician_ids[0])?.color || "hsl(var(--primary))"
+                        : "hsl(var(--primary))";
+                      return (
+                        <div
+                          key={event.id}
+                          className="bg-card border border-border rounded-xl p-3 cursor-pointer active:bg-muted/30 transition-colors"
+                          style={{ borderLeft: `3px solid ${techColor}` }}
+                          onClick={() => setDetailEvent(event)}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-sm truncate">
+                                {event.customer || event.title}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {event.job
+                                  ? JOB_TYPE_LABELS[event.job.job_type] || event.job.job_type
+                                  : event.title}
+                              </p>
+                            </div>
+                            <div className="text-xs text-muted-foreground shrink-0 text-right tabular-nums">
+                              <p className="font-medium">{format(parseISO(event.start_time), "HH:mm")}</p>
+                              <p>–{format(parseISO(event.end_time), "HH:mm")}</p>
+                            </div>
+                          </div>
+                          {event.technician_ids.length > 0 && (
+                            <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5 truncate">
+                              <Users className="h-3 w-3 shrink-0" />
+                              {getTechNames(event.technician_ids)}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <EventDrawer
+          open={!!detailEvent}
+          onOpenChange={(o) => { if (!o) setDetailEvent(null); }}
+          event={detailEvent}
+          technicians={technicians}
+          onEdit={(ev) => { openEditEvent(ev); setDetailEvent(null); }}
+          onDeleted={fetchEvents}
+          onRefresh={fetchEvents}
+        />
+        <CreateEventDrawer
+          open={createDrawerOpen}
+          onOpenChange={setCreateDrawerOpen}
+          technicians={technicians}
+          editEvent={editingEvent}
+          prefillDate={prefillDate}
+          prefillStartTime={prefillStartTime}
+          prefillEndTime={prefillEndTime}
+          prefillJobId={prefillJobId}
+          prefillTitle={prefillTitle}
+          prefillCustomer={prefillCustomer}
+          prefillAddress={prefillAddress}
+          selectedTechId={selectedTechId}
+          onSaved={fetchEvents}
+        />
+      </div>
+    );
+  }
+
+  // ── Desktop kalendervisning ───────────────────────────────────────────────
   return (
     <div className="space-y-4">
       {/* Header */}

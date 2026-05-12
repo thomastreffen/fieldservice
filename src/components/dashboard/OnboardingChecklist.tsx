@@ -86,7 +86,7 @@ export default function OnboardingChecklist() {
       </div>
 
       {!collapsed && (
-        <div className="mt-2.5 grid grid-cols-2 gap-x-4 gap-y-0.5">
+        <div className="mt-2.5 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0.5">
           {items.map(item => (
             <div
               key={item.key}
