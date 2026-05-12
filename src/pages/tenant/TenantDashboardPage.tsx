@@ -1,17 +1,22 @@
 import { useDashboardData } from "@/hooks/useDashboardData";
+import { useAuth } from "@/hooks/useAuth";
 import DashActionItems from "@/components/dashboard/DashActionItems";
 import DashDriftSection from "@/components/dashboard/DashDriftSection";
 import DashMiniKanban from "@/components/dashboard/DashMiniKanban";
+import DashTechnicianOverview from "@/components/dashboard/DashTechnicianOverview";
 import TrialBanner from "@/components/dashboard/TrialBanner";
 import OnboardingChecklist from "@/components/dashboard/OnboardingChecklist";
 import { formatCurrency } from "@/lib/crm-labels";
 import { AlertCircle, CalendarDays, TrendingUp, CheckCircle2, CalendarX, ArrowUpRight, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { startOfMonth } from "date-fns";
 
 export default function TenantDashboardPage() {
   const d = useDashboardData();
+  const { isTenantAdmin, isMasterAdmin } = useAuth();
   const navigate = useNavigate();
+  const isAdmin = isTenantAdmin || isMasterAdmin;
 
   if (d.loading) {
     return (
@@ -21,13 +26,17 @@ export default function TenantDashboardPage() {
     );
   }
 
+  const cardBase = "text-left rounded-xl border bg-card p-5 transition-all [box-shadow:0_1px_3px_rgba(0,0,0,0.06)] hover:[box-shadow:0_4px_12px_rgba(0,0,0,0.09)] hover:-translate-y-px group";
+
+  if (!isAdmin) {
+    return <SelgerDashboard d={d} navigate={navigate} cardBase={cardBase} />;
+  }
+
   const urgentCount = d.overdueAgreements.length + d.casesWithoutOwner.length;
   const isUrgent = urgentCount > 0;
   const pipelineValue = d.allDeals.reduce((s, deal) => s + ((deal as any).value ?? 0), 0);
   const hasDeals = d.allDeals.length > 0 || d.wonDeals.length > 0;
   const hasDrift = d.jobsThisWeek.length > 0 || d.visitsNext14.length > 0;
-
-  const cardBase = "text-left rounded-xl border bg-card p-5 transition-all [box-shadow:0_1px_3px_rgba(0,0,0,0.06)] hover:[box-shadow:0_4px_12px_rgba(0,0,0,0.09)] hover:-translate-y-px group";
 
   return (
     <div className="space-y-8">
@@ -109,6 +118,9 @@ export default function TenantDashboardPage() {
         </button>
       </div>
 
+      {/* Teknikeroversikt */}
+      <DashTechnicianOverview />
+
       {/* To-kolonne midtseksjon */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
 
@@ -166,6 +178,115 @@ export default function TenantDashboardPage() {
           <div className="flex items-center gap-1.5 px-0.5">
             <TrendingUp className="h-3.5 w-3.5 text-muted-foreground/60" />
             <p className="text-sm font-medium text-muted-foreground">Hvordan går salget?</p>
+          </div>
+          <DashMiniKanban
+            dealsByStage={d.dealsByStage}
+            wonDeals={d.wonDeals}
+            companyMap={d.companyMap}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SelgerDashboard({
+  d,
+  navigate,
+  cardBase,
+}: {
+  d: ReturnType<typeof useDashboardData>;
+  navigate: ReturnType<typeof useNavigate>;
+  cardBase: string;
+}) {
+  const now = new Date();
+  const monthStart = startOfMonth(now);
+
+  const allDeals = d.allDeals;
+  const wonDeals = d.wonDeals;
+  const pipelineValue = allDeals.reduce((s, deal) => s + ((deal as any).value ?? 0), 0);
+  const wonThisMonth = wonDeals.filter(deal => {
+    const created = (deal as any).created_at;
+    return created && new Date(created) >= monthStart;
+  });
+  const wonThisMonthValue = wonThisMonth.reduce((s, deal) => s + ((deal as any).value ?? 0), 0);
+  const leadsThisWeek = allDeals.filter(deal => deal.stage === "lead");
+  const totalDeals = allDeals.length + wonDeals.length;
+  const conversionRate = totalDeals > 0 ? Math.round((wonDeals.length / totalDeals) * 100) : 0;
+
+  const hasDeals = allDeals.length > 0 || wonDeals.length > 0;
+
+  return (
+    <div className="space-y-8">
+      <TrialBanner />
+
+      {/* 4 KPI-kort for selger */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <button
+          className={cn(cardBase, "border-border hover:border-border")}
+          onClick={() => navigate("/tenant/crm/deals")}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Aktive salg</span>
+            <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground/25 group-hover:text-muted-foreground/60 transition-colors" />
+          </div>
+          <p className="text-[40px] font-bold font-[Lexend] leading-none tabular-nums text-foreground">
+            {allDeals.length}
+          </p>
+          <p className="text-xs text-muted-foreground mt-2">{leadsThisWeek.length} leads</p>
+        </button>
+
+        <button
+          className={cn(cardBase, "border-border hover:border-border")}
+          onClick={() => navigate("/tenant/crm/deals")}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Pipeline</span>
+            <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground/25 group-hover:text-muted-foreground/60 transition-colors" />
+          </div>
+          <p className="text-[28px] font-bold font-[Lexend] leading-none tabular-nums text-foreground">
+            {formatCurrency(pipelineValue)}
+          </p>
+          <p className="text-xs text-muted-foreground mt-2">total verdi</p>
+        </button>
+
+        <button
+          className={cn(cardBase, "border-border hover:border-border")}
+          onClick={() => navigate("/tenant/crm/deals")}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Vunnet (mnd)</span>
+            <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground/25 group-hover:text-muted-foreground/60 transition-colors" />
+          </div>
+          <p className="text-[28px] font-bold font-[Lexend] leading-none tabular-nums text-emerald-600 dark:text-emerald-400">
+            {wonThisMonth.length > 0 ? formatCurrency(wonThisMonthValue) : wonDeals.length}
+          </p>
+          <p className="text-xs text-muted-foreground mt-2">
+            {wonThisMonth.length > 0 ? `${wonThisMonth.length} avtaler` : "ingen denne måneden"}
+          </p>
+        </button>
+
+        <button
+          className={cn(cardBase, "border-border hover:border-border")}
+          onClick={() => navigate("/tenant/crm/deals")}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-widest">Konvertering</span>
+            <ArrowUpRight className="h-3.5 w-3.5 text-muted-foreground/25 group-hover:text-muted-foreground/60 transition-colors" />
+          </div>
+          <p className="text-[40px] font-bold font-[Lexend] leading-none tabular-nums text-foreground">
+            {conversionRate}%
+          </p>
+          <p className="text-xs text-muted-foreground mt-2">{wonDeals.length} av {totalDeals} salg</p>
+        </button>
+      </div>
+
+      {/* Pipeline */}
+      {hasDeals && (
+        <div className="flex flex-col gap-2.5">
+          <div className="flex items-center gap-1.5 px-0.5">
+            <TrendingUp className="h-3.5 w-3.5 text-muted-foreground/60" />
+            <p className="text-sm font-medium text-muted-foreground">Salgspipeline</p>
           </div>
           <DashMiniKanban
             dealsByStage={d.dealsByStage}

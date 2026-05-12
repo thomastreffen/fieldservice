@@ -6,7 +6,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard, Plug, LogOut, Flame, Puzzle, Users, Mail,
-  CalendarDays, Search, Bell, Contact, X, MoreHorizontal,
+  CalendarDays, Search, Contact, X, MoreHorizontal,
   Building2, TrendingUp, Shield, Briefcase, Cpu, FileText, ShieldAlert, ClipboardList, Inbox,
   ArrowRightLeft, Wrench,
 } from "lucide-react";
@@ -15,6 +15,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
+import NotificationCenter from "@/components/notifications/NotificationCenter";
 
 interface NavItem {
   label: string;
@@ -162,9 +163,7 @@ function TopBar({ user, signOut, isMobile }: { user: any; signOut: () => void; i
         )}
       </div>
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" className="text-muted-foreground">
-          <Bell className="w-4 h-4" />
-        </Button>
+        <NotificationCenter />
         <div className="flex items-center gap-2 pl-2 border-l border-border">
           <Avatar className="h-8 w-8">
             <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
