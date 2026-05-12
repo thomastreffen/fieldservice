@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -58,8 +59,20 @@ import PublicFormPage from "@/pages/PublicFormPage";
 import NotFound from "@/pages/NotFound";
 import NoTenantPage from "@/pages/NoTenantPage";
 import TechnicianDashboardPage from "@/pages/tenant/TechnicianDashboardPage";
+import TechnicianMobileLayout from "@/layouts/TechnicianMobileLayout";
+import TodayPage from "@/pages/technician/TodayPage";
+import TechJobDetailPage from "@/pages/technician/TechJobDetailPage";
+import { supabase } from "@/integrations/supabase/client";
 
 const queryClient = new QueryClient();
+
+function TechnicianRoute({ children }: { children: React.ReactNode }) {
+  return (
+    <ProtectedRoute requireRole="tenant_member">
+      <TechnicianMobileLayout>{children}</TechnicianMobileLayout>
+    </ProtectedRoute>
+  );
+}
 
 /** Wrapper for operative tenant routes – requires tenant membership, not admin role */
 function TenantRoute({ children, module, permission }: { children: React.ReactNode; module?: string; permission?: string }) {
@@ -86,6 +99,23 @@ function TenantAdminRoute({ children }: { children: React.ReactNode }) {
 
 function AppRoutes() {
   const { user, loading, isPasswordRecovery, isMasterAdmin, isTenantAdmin, tenantId } = useAuth();
+  const [isTechnicianUser, setIsTechnicianUser] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (loading) return;
+    if (!user || !tenantId || isTenantAdmin || isMasterAdmin) {
+      setIsTechnicianUser(false);
+      return;
+    }
+    supabase
+      .from("technicians")
+      .select("id")
+      .eq("tenant_id", tenantId)
+      .eq("user_id", user.id)
+      .eq("is_active", true)
+      .limit(1)
+      .then(({ data }) => setIsTechnicianUser(!!(data?.[0])));
+  }, [loading, user, tenantId, isTenantAdmin, isMasterAdmin]);
 
   if (loading) {
     return (
@@ -104,13 +134,20 @@ function AppRoutes() {
     );
   }
 
+  if (isTechnicianUser === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   const getHomeRedirect = () => {
     if (!user) return "/login";
     if (isMasterAdmin && isTenantAdmin) return "/select-role";
     if (isMasterAdmin) return "/admin";
-    // Both tenant admins and regular tenant members go to /tenant
+    if (!isTenantAdmin && isTechnicianUser) return "/technician/today";
     if (isTenantAdmin || tenantId) return "/tenant";
-    // User is authenticated but has no tenant – show a helpful page instead of login loop
     return "/no-tenant";
   };
 
@@ -179,6 +216,10 @@ function AppRoutes() {
       <Route path="/tenant/integrations" element={<TenantAdminRoute><TenantIntegrationsPage /></TenantAdminRoute>} />
       <Route path="/tenant/users" element={<TenantAdminRoute><TenantUsersPage /></TenantAdminRoute>} />
       <Route path="/tenant/access-control" element={<TenantAdminRoute><TenantAccessControlPage /></TenantAdminRoute>} />
+
+      {/* Technician mobile routes – uses TechnicianMobileLayout (no sidebar) */}
+      <Route path="/technician/today" element={<TechnicianRoute><TodayPage /></TechnicianRoute>} />
+      <Route path="/technician/jobs/:id" element={<TechnicianRoute><TechJobDetailPage /></TechnicianRoute>} />
 
       {/* Public form route - no auth required */}
       <Route path="/forms/:publishKey" element={<PublicFormPage />} />
