@@ -36,9 +36,11 @@ import {
   Paperclip,
   Inbox,
   Settings,
+  ArrowLeft,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { nb } from "date-fns/locale";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type Case = {
   id: string;
@@ -96,6 +98,7 @@ export default function PostkontoretPage() {
   const { user, tenantId } = useAuth();
   const { canDo } = useCanDo();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [cases, setCases] = useState<Case[]>([]);
   const [items, setItems] = useState<CaseItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -261,15 +264,16 @@ export default function PostkontoretPage() {
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Postkontoret</h1>
-          <p className="text-muted-foreground mt-1">Håndter innkommende henvendelser og e-post</p>
+          <h1 className="text-xl sm:text-3xl font-bold tracking-tight">Postkontoret</h1>
+          <p className="text-muted-foreground mt-1 hidden sm:block">Håndter innkommende henvendelser og e-post</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={syncInbox} disabled={syncing || mailboxReady === false} className="gap-2">
             <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
-            {syncing ? "Synkroniserer..." : "Synk e-post"}
+            <span className="hidden sm:inline">{syncing ? "Synkroniserer..." : "Synk e-post"}</span>
+            <span className="sm:hidden">{syncing ? "..." : "Synk"}</span>
           </Button>
-          <Button variant="outline" size="sm" onClick={() => fetchCases()} className="gap-2">
+          <Button variant="outline" size="sm" onClick={() => fetchCases()} className="gap-2 hidden sm:flex">
             <RefreshCw className="h-4 w-4" />
             Oppdater
           </Button>
@@ -277,16 +281,16 @@ export default function PostkontoretPage() {
       </div>
 
       <div className="flex gap-6 min-h-[calc(100vh-220px)]">
-        {/* Left: Case list */}
-        <div className="w-full max-w-md flex flex-col gap-3">
+        {/* Left: Case list – hidden on mobile when a case is open */}
+        <div className={`w-full flex flex-col gap-3 sm:max-w-md${isMobile && selectedId ? " hidden" : ""}`}>
           {/* Filters */}
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex gap-1.5 overflow-x-auto pb-0.5 sm:flex-wrap">
             {FILTER_OPTIONS.map((f) => (
               <Button
                 key={f.key}
                 variant={filter === f.key ? "default" : "outline"}
                 size="sm"
-                className="gap-1.5 text-xs"
+                className="gap-1.5 text-xs shrink-0"
                 onClick={() => setFilter(f.key)}
               >
                 <f.icon className="h-3.5 w-3.5" />
@@ -332,7 +336,7 @@ export default function PostkontoretPage() {
                 {filtered.map((c) => (
                   <Card
                     key={c.id}
-                    className={`p-3 cursor-pointer transition-all hover:shadow-sm ${
+                    className={`px-3 py-3.5 sm:py-3 cursor-pointer transition-all hover:shadow-sm ${
                       selectedId === c.id ? "ring-2 ring-primary bg-primary/5" : "hover:bg-muted/50"
                     }`}
                     onClick={() => openCase(c)}
@@ -372,8 +376,18 @@ export default function PostkontoretPage() {
           </ScrollArea>
         </div>
 
-        {/* Right: Case detail */}
-        <div className="flex-1 min-w-0">
+        {/* Right: Case detail – hidden on mobile when no case is selected */}
+        <div className={`flex-1 min-w-0${isMobile && !selectedId ? " hidden" : ""}`}>
+          {isMobile && selectedId && (
+            <button
+              onClick={() => setSelectedId(null)}
+              className="flex items-center gap-2 text-sm font-medium text-muted-foreground mb-3 active:opacity-70 transition-opacity"
+              style={{ minHeight: 44 }}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Tilbake til saker
+            </button>
+          )}
           {selectedCase ? (
             <Card className="h-full flex flex-col">
               <div className="p-4 border-b border-border/50">
