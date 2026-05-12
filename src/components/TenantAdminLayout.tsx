@@ -6,7 +6,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard, Plug, LogOut, Flame, Puzzle, Users, Mail,
-  CalendarDays, Menu, Search, Bell, Contact,
+  CalendarDays, Search, Bell, Contact, X, MoreHorizontal,
   Building2, TrendingUp, Shield, Briefcase, Cpu, FileText, ShieldAlert, ClipboardList, Inbox,
   ArrowRightLeft, Wrench,
 } from "lucide-react";
@@ -65,6 +65,9 @@ const navSections: { label: string; items: NavItem[] }[] = [
   },
 ];
 
+// Items shown directly in the mobile bottom nav — excluded from the "Mer" sheet
+const BOTTOM_NAV_HREFS = new Set(["/tenant", "/tenant/crm/companies", "/tenant/crm/jobs", "/tenant/ressursplanlegger"]);
+
 function SidebarNav({
   location,
   onNavigate,
@@ -72,6 +75,7 @@ function SidebarNav({
   hasModule,
   hasPermission,
   isAdmin,
+  excludeHrefs,
 }: {
   location: ReturnType<typeof useLocation>;
   onNavigate?: () => void;
@@ -79,6 +83,7 @@ function SidebarNav({
   hasModule: (m: string) => boolean;
   hasPermission: (k: string) => boolean;
   isAdmin: boolean;
+  excludeHrefs?: Set<string>;
 }) {
   const visibleSections = useMemo(
     () =>
@@ -86,17 +91,15 @@ function SidebarNav({
         .map((section) => ({
           ...section,
           items: section.items.filter((item) => {
-            // Admin-only items hidden from regular users
+            if (excludeHrefs?.has(item.href)) return false;
             if (item.adminOnly && !isAdmin) return false;
-            // Module not activated for tenant
             if (item.module && !hasModule(item.module)) return false;
-            // Permission check (admins bypass)
             if (item.permission && !hasPermission(item.permission)) return false;
             return true;
           }),
         }))
         .filter((section) => section.items.length > 0),
-    [hasModule, hasPermission, isAdmin]
+    [hasModule, hasPermission, isAdmin, excludeHrefs]
   );
 
   return (
@@ -140,19 +143,23 @@ function SidebarNav({
   );
 }
 
-function TopBar({ user, signOut, onMenuClick, isMobile }: { user: any; signOut: () => void; onMenuClick?: () => void; isMobile: boolean }) {
+function TopBar({ user, signOut, isMobile }: { user: any; signOut: () => void; isMobile: boolean }) {
   return (
     <header className="h-14 border-b border-border bg-card flex items-center justify-between px-4 gap-4 shrink-0">
       <div className="flex items-center gap-3">
-        {isMobile && (
-          <Button variant="ghost" size="icon" className="shrink-0" onClick={onMenuClick}>
-            <Menu className="w-5 h-5" />
-          </Button>
+        {isMobile ? (
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
+              <Flame className="w-3.5 h-3.5 text-primary-foreground" />
+            </div>
+            <span className="text-sm font-semibold">VPKontroll</span>
+          </div>
+        ) : (
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input placeholder="Søk kontakter, salg..." className="pl-9 h-9 w-64 bg-muted/50 border-0 focus-visible:ring-1" />
+          </div>
         )}
-        <div className="relative hidden sm:block">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Søk kontakter, salg..." className="pl-9 h-9 w-64 bg-muted/50 border-0 focus-visible:ring-1" />
-        </div>
       </div>
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="icon" className="text-muted-foreground">
@@ -164,13 +171,66 @@ function TopBar({ user, signOut, onMenuClick, isMobile }: { user: any; signOut: 
               {(user?.email?.[0] || "U").toUpperCase()}
             </AvatarFallback>
           </Avatar>
-          <Button variant="ghost" size="sm" className="gap-1 text-xs hidden sm:flex" onClick={signOut}>
-            <LogOut className="w-3.5 h-3.5" />
-            Logg ut
-          </Button>
+          {!isMobile && (
+            <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={signOut}>
+              <LogOut className="w-3.5 h-3.5" />
+              Logg ut
+            </Button>
+          )}
         </div>
       </div>
     </header>
+  );
+}
+
+function BottomNav({
+  location,
+  onMoreClick,
+}: {
+  location: ReturnType<typeof useLocation>;
+  onMoreClick: () => void;
+}) {
+  const items = [
+    { label: "Hjem", href: "/tenant", exact: true, icon: LayoutDashboard },
+    { label: "Kunder", href: "/tenant/crm/companies", exact: false, icon: Building2 },
+    { label: "Jobber", href: "/tenant/crm/jobs", exact: false, icon: Briefcase },
+    { label: "Kalender", href: "/tenant/ressursplanlegger", exact: false, icon: CalendarDays },
+  ];
+
+  return (
+    <nav
+      className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50"
+      style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+    >
+      <div className="grid grid-cols-5 h-16">
+        {items.map((item) => {
+          const active = item.exact
+            ? location.pathname === item.href
+            : location.pathname === item.href || location.pathname.startsWith(item.href + "/");
+          return (
+            <Link
+              key={item.href}
+              to={item.href}
+              className={cn(
+                "flex flex-col items-center justify-center gap-1 transition-colors active:opacity-70",
+                active ? "text-primary" : "text-muted-foreground"
+              )}
+            >
+              <item.icon className={cn("h-[22px] w-[22px]", active && "stroke-[2.5]")} />
+              <span className="text-[11px] font-medium">{item.label}</span>
+            </Link>
+          );
+        })}
+        <button
+          onClick={onMoreClick}
+          className="flex flex-col items-center justify-center gap-1 text-muted-foreground active:opacity-70 transition-colors"
+          style={{ minHeight: 48 }}
+        >
+          <MoreHorizontal className="h-[22px] w-[22px]" />
+          <span className="text-[11px] font-medium">Mer</span>
+        </button>
+      </div>
+    </nav>
   );
 }
 
@@ -196,30 +256,49 @@ export default function TenantAdminLayout({ children }: { children: ReactNode })
   const { hasPermission } = usePermissions();
   const location = useLocation();
   const isMobile = useIsMobile();
-  const [open, setOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
 
   const isAdmin = isMasterAdmin || isTenantAdmin;
 
   if (isMobile) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
-        <TopBar user={user} signOut={signOut} onMenuClick={() => setOpen(true)} isMobile />
-        <Sheet open={open} onOpenChange={setOpen}>
-          <SheetContent side="left" className="w-72 p-0 bg-card flex flex-col">
-            <SheetTitle className="sr-only">Navigasjon</SheetTitle>
-            <div className="p-4 flex items-center gap-3 border-b border-border">
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-                <Flame className="w-4 h-4 text-primary-foreground" />
-              </div>
-              <span className="text-sm font-semibold">VPKontroll</span>
+        <TopBar user={user} signOut={signOut} isMobile />
+
+        <main
+          className="flex-1 overflow-auto"
+          style={{ paddingBottom: "calc(64px + env(safe-area-inset-bottom, 0px))" }}
+        >
+          <div className="p-4 max-w-[1400px] mx-auto">{children}</div>
+        </main>
+
+        <BottomNav location={location} onMoreClick={() => setMoreOpen(true)} />
+
+        <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
+          <SheetContent
+            side="bottom"
+            className="h-auto max-h-[85vh] p-0 rounded-t-2xl overflow-hidden flex flex-col"
+          >
+            <SheetTitle className="sr-only">Mer navigasjon</SheetTitle>
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">
+              <span className="font-semibold text-sm">Meny</span>
+              <Button variant="ghost" size="icon" onClick={() => setMoreOpen(false)}>
+                <X className="h-4 w-4" />
+              </Button>
             </div>
-            <SidebarNav location={location} onNavigate={() => setOpen(false)} hasModule={hasModule} hasPermission={hasPermission} isAdmin={isAdmin} />
-            <RoleSwitchLink />
+            <div className="overflow-y-auto flex-1">
+              <SidebarNav
+                location={location}
+                onNavigate={() => setMoreOpen(false)}
+                hasModule={hasModule}
+                hasPermission={hasPermission}
+                isAdmin={isAdmin}
+                excludeHrefs={BOTTOM_NAV_HREFS}
+              />
+              <RoleSwitchLink />
+            </div>
           </SheetContent>
         </Sheet>
-        <main className="flex-1 overflow-auto">
-          <div className="p-4 md:p-6 max-w-[1400px] mx-auto">{children}</div>
-        </main>
       </div>
     );
   }
