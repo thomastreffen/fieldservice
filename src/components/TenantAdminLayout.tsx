@@ -6,7 +6,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard, Plug, LogOut, Flame, Puzzle, Users, Mail,
-  CalendarDays, Search, Contact, X, MoreHorizontal,
+  CalendarDays, Contact, X, MoreHorizontal,
   Building2, TrendingUp, Shield, Briefcase, Cpu, FileText, ShieldAlert, ClipboardList, Inbox,
   ArrowRightLeft, Wrench,
 } from "lucide-react";
@@ -14,8 +14,8 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
+import GlobalSearch from "@/components/search/GlobalSearch";
 
 interface NavItem {
   label: string;
@@ -156,13 +156,11 @@ function TopBar({ user, signOut, isMobile }: { user: any; signOut: () => void; i
             <span className="text-sm font-semibold">VPKontroll</span>
           </div>
         ) : (
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Søk kontakter, salg..." className="pl-9 h-9 w-64 bg-muted/50 border-0 focus-visible:ring-1" />
-          </div>
+          <GlobalSearch />
         )}
       </div>
       <div className="flex items-center gap-2">
+        {isMobile && <GlobalSearch />}
         <NotificationCenter />
         <div className="flex items-center gap-2 pl-2 border-l border-border">
           <Avatar className="h-8 w-8">
