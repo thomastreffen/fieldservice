@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useTenantModules } from "@/hooks/useTenantModules";
 import { usePermissions } from "@/hooks/usePermissions";
+import { useVertical } from "@/hooks/useVertical";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard, Plug, LogOut, Flame, Puzzle, Users, Mail,
@@ -75,6 +76,7 @@ function SidebarNav({
   collapsed,
   hasModule,
   hasPermission,
+  hasVerticalModule,
   isAdmin,
   excludeHrefs,
 }: {
@@ -83,6 +85,7 @@ function SidebarNav({
   collapsed?: boolean;
   hasModule: (m: string) => boolean;
   hasPermission: (k: string) => boolean;
+  hasVerticalModule: (m: string) => boolean;
   isAdmin: boolean;
   excludeHrefs?: Set<string>;
 }) {
@@ -95,12 +98,13 @@ function SidebarNav({
             if (excludeHrefs?.has(item.href)) return false;
             if (item.adminOnly && !isAdmin) return false;
             if (item.module && !hasModule(item.module)) return false;
+            if (item.module && !hasVerticalModule(item.module)) return false;
             if (item.permission && !hasPermission(item.permission)) return false;
             return true;
           }),
         }))
         .filter((section) => section.items.length > 0),
-    [hasModule, hasPermission, isAdmin, excludeHrefs]
+    [hasModule, hasPermission, hasVerticalModule, isAdmin, excludeHrefs]
   );
 
   return (
@@ -251,6 +255,7 @@ export default function TenantAdminLayout({ children }: { children: ReactNode })
   const { signOut, user, isMasterAdmin, isTenantAdmin } = useAuth();
   const { hasModule } = useTenantModules();
   const { hasPermission } = usePermissions();
+  const { hasVerticalModule, vertical } = useVertical();
   const location = useLocation();
   const isMobile = useIsMobile();
   const [moreOpen, setMoreOpen] = useState(false);
@@ -289,6 +294,7 @@ export default function TenantAdminLayout({ children }: { children: ReactNode })
                 onNavigate={() => setMoreOpen(false)}
                 hasModule={hasModule}
                 hasPermission={hasPermission}
+                hasVerticalModule={hasVerticalModule}
                 isAdmin={isAdmin}
                 excludeHrefs={BOTTOM_NAV_HREFS}
               />
@@ -307,9 +313,14 @@ export default function TenantAdminLayout({ children }: { children: ReactNode })
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
             <Flame className="w-4 h-4 text-primary-foreground" />
           </div>
-          <span className="text-sm font-semibold">VPKontroll</span>
+          <div className="flex flex-col min-w-0">
+            <span className="text-sm font-semibold">VPKontroll</span>
+            {vertical && (
+              <span className="text-[10px] text-muted-foreground truncate">{vertical.display_name}</span>
+            )}
+          </div>
         </div>
-        <SidebarNav location={location} hasModule={hasModule} hasPermission={hasPermission} isAdmin={isAdmin} />
+        <SidebarNav location={location} hasModule={hasModule} hasPermission={hasPermission} hasVerticalModule={hasVerticalModule} isAdmin={isAdmin} />
         <RoleSwitchLink />
       </aside>
       <div className="flex-1 flex flex-col min-w-0">
