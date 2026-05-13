@@ -1,6 +1,8 @@
 import { ReactNode, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
   Building2, LayoutDashboard, Plug, LogOut, Flame, Puzzle,
@@ -50,7 +52,7 @@ function SidebarNav({ location, onNavigate }: { location: any; onNavigate?: () =
   );
 }
 
-function TopBar({ user, signOut, onMenuClick, isMobile }: { user: any; signOut: () => void; onMenuClick?: () => void; isMobile: boolean }) {
+function TopBar({ user, signOut, onMenuClick, isMobile, tenantName }: { user: any; signOut: () => void; onMenuClick?: () => void; isMobile: boolean; tenantName?: string | null }) {
   return (
     <header className="h-14 border-b border-border bg-card flex items-center justify-between px-4 gap-4 shrink-0">
       <div className="flex items-center gap-3">
@@ -65,6 +67,15 @@ function TopBar({ user, signOut, onMenuClick, isMobile }: { user: any; signOut: 
         </div>
       </div>
       <div className="flex items-center gap-2">
+        {tenantName && (
+          <Link
+            to="/tenant"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-semibold bg-muted text-muted-foreground hover:bg-muted/60 hover:text-foreground transition-colors shrink-0"
+          >
+            <ArrowRightLeft className="w-3 h-3" />
+            Tilbake til {tenantName}
+          </Link>
+        )}
         <Button variant="ghost" size="icon" className="text-muted-foreground">
           <Bell className="w-4 h-4" />
         </Button>
@@ -101,15 +112,25 @@ function RoleSwitchLink() {
 }
 
 export default function MasterAdminLayout({ children }: { children: ReactNode }) {
-  const { signOut, user } = useAuth();
+  const { signOut, user, tenantId } = useAuth();
   const location = useLocation();
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
 
+  const { data: tenantName } = useQuery({
+    queryKey: ["tenant-name-topbar", tenantId],
+    enabled: !!tenantId,
+    staleTime: 10 * 60 * 1000,
+    queryFn: async () => {
+      const { data } = await (supabase as any).from("tenants").select("name").eq("id", tenantId).single();
+      return (data?.name as string) ?? null;
+    },
+  });
+
   if (isMobile) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
-        <TopBar user={user} signOut={signOut} onMenuClick={() => setOpen(true)} isMobile />
+        <TopBar user={user} signOut={signOut} onMenuClick={() => setOpen(true)} isMobile tenantName={tenantName} />
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetContent side="left" className="w-72 p-0 bg-card flex flex-col">
             <SheetTitle className="sr-only">Navigasjon</SheetTitle>
@@ -145,7 +166,7 @@ export default function MasterAdminLayout({ children }: { children: ReactNode })
         <RoleSwitchLink />
       </aside>
       <div className="flex-1 flex flex-col min-w-0">
-        <TopBar user={user} signOut={signOut} isMobile={false} />
+        <TopBar user={user} signOut={signOut} isMobile={false} tenantName={tenantName} />
         <main className="flex-1 overflow-auto">
           <div className="p-6 lg:p-8 max-w-[1400px] mx-auto">{children}</div>
         </main>

@@ -148,7 +148,7 @@ function SidebarNav({
   );
 }
 
-function TopBar({ user, signOut, isMobile }: { user: any; signOut: () => void; isMobile: boolean }) {
+function TopBar({ user, signOut, isMobile, isMasterAdmin }: { user: any; signOut: () => void; isMobile: boolean; isMasterAdmin: boolean }) {
   return (
     <header className="h-14 border-b border-border bg-card flex items-center justify-between px-4 gap-4 shrink-0">
       <div className="flex items-center gap-3">
@@ -165,6 +165,15 @@ function TopBar({ user, signOut, isMobile }: { user: any; signOut: () => void; i
       </div>
       <div className="flex items-center gap-2">
         {isMobile && <GlobalSearch />}
+        {isMasterAdmin && (
+          <Link
+            to="/admin"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-semibold bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors shrink-0"
+          >
+            <ArrowRightLeft className="w-3 h-3" />
+            Master Admin
+          </Link>
+        )}
         <NotificationCenter />
         <div className="flex items-center gap-2 pl-2 border-l border-border">
           <Avatar className="h-8 w-8">
@@ -265,7 +274,7 @@ export default function TenantAdminLayout({ children }: { children: ReactNode })
   if (isMobile) {
     return (
       <div className="min-h-screen flex flex-col bg-background">
-        <TopBar user={user} signOut={signOut} isMobile />
+        <TopBar user={user} signOut={signOut} isMobile isMasterAdmin={isMasterAdmin} />
 
         <main
           className="flex-1 overflow-auto"
@@ -324,7 +333,7 @@ export default function TenantAdminLayout({ children }: { children: ReactNode })
         <RoleSwitchLink />
       </aside>
       <div className="flex-1 flex flex-col min-w-0">
-        <TopBar user={user} signOut={signOut} isMobile={false} />
+        <TopBar user={user} signOut={signOut} isMobile={false} isMasterAdmin={isMasterAdmin} />
         <main className="flex-1 overflow-auto">
           <div className="p-6 lg:p-8 max-w-[1400px] mx-auto">{children}</div>
         </main>
