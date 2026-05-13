@@ -9,6 +9,9 @@ import { CreateEventDrawer } from "@/components/resource/CreateEventDrawer";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { UnplannedJobsStrip } from "@/components/resource/UnplannedJobsStrip";
+import { CapacityGapsStrip } from "@/components/resource/CapacityGapsStrip";
+import { useCapacity } from "@/hooks/useCapacity";
+import { useCapacityGaps } from "@/hooks/useCapacityGaps";
 import {
   ChevronLeft, ChevronRight, Plus, RotateCcw,
   Users, Briefcase, CalendarDays, Calendar, List, Phone, Clock, Loader2,
@@ -183,6 +186,24 @@ export default function RessursplanleggerPage() {
       };
     });
   }, [filteredEvents, technicians, canDo]);
+
+  // Capacity calculation (week view only)
+  const capacityEvents = useMemo(() => events.map((e) => ({
+    id: e.id,
+    start: parseISO(e.start_time),
+    end: parseISO(e.end_time),
+    technicians: e.technician_ids.map((id) => ({ id })),
+  })), [events]);
+
+  const technicianIds = useMemo(() => technicians.map((t) => t.id), [technicians]);
+
+  const technicianMap = useMemo(() =>
+    new Map(technicians.map((t) => [t.id, { name: t.name, color: t.color }])),
+    [technicians]
+  );
+
+  const { techCapacities } = useCapacity(capacityEvents, [], referenceDate, technicianIds);
+  const capacityGapsSummary = useCapacityGaps(capacityEvents, techCapacities, technicianMap, referenceDate);
 
   // Navigation
   const goToPrev = useCallback(() => {
@@ -601,6 +622,11 @@ export default function RessursplanleggerPage() {
           setCreateDrawerOpen(true);
         }}
       />
+
+      {/* Capacity gaps — only shown in week view */}
+      {calendarView === "timeGridWeek" && (
+        <CapacityGapsStrip summary={capacityGapsSummary} />
+      )}
 
       <div className="flex gap-4">
         {/* Technician sidebar */}

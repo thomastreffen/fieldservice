@@ -1,19 +1,19 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useCompanyDetail } from "@/hooks/useCompanyDetail";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+import { useActivityLog } from "@/hooks/useActivityLog";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { ActivityComposer } from "@/components/crm/ActivityComposer";
+import { ActivityFeedList } from "@/components/crm/ActivityFeedList";
 import {
   Loader2, ArrowLeft, Contact, MapPin, Thermometer, TrendingUp, Wrench,
   ShieldCheck, FileText, Mail, Phone, Plus, Pencil, ScrollText,
-  MessageSquare, Calendar, FileEdit, Clock, ChevronRight,
+  Clock, ChevronRight,
 } from "lucide-react";
 import { DEAL_STAGE_LABELS, DEAL_STAGE_COLORS, formatCurrency } from "@/lib/crm-labels";
 import {
@@ -30,28 +30,10 @@ import { AssetFormDialog } from "@/components/crud/AssetFormDialog";
 import { AgreementFormDialog } from "@/components/crud/AgreementFormDialog";
 import { WarrantyFormDialog } from "@/components/crud/WarrantyFormDialog";
 import { useCanDo } from "@/hooks/useCanDo";
-import { format } from "date-fns";
-import { nb } from "date-fns/locale";
-
-type ActivityType = "call" | "note" | "meeting" | "email";
-type Activity = {
-  id: string;
-  type: ActivityType;
-  content: string;
-  created_at: string;
-  created_by: string | null;
-};
-
-const ACTIVITY_TYPES: { value: ActivityType; label: string; icon: React.ElementType; color: string }[] = [
-  { value: "note", label: "Notat", icon: FileEdit, color: "text-gray-500" },
-  { value: "call", label: "Samtale", icon: Phone, color: "text-blue-500" },
-  { value: "meeting", label: "Møte", icon: Calendar, color: "text-violet-500" },
-  { value: "email", label: "E-post", icon: Mail, color: "text-orange-500" },
-];
 
 export default function CompanyDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { tenantId, user } = useAuth();
+  const { user } = useAuth();
   const { canDo } = useCanDo();
   const navigate = useNavigate();
   const { company, contacts, sites, assets, deals, jobs, agreements, warrantyCases, documents } = useCompanyDetail(id);
@@ -415,9 +397,7 @@ export default function CompanyDetailPage() {
 
         {/* Aktivitetslogg sidebar */}
         <div className="hidden lg:block w-72 shrink-0">
-          {id && tenantId && (
-            <ActivityLogSidebar companyId={id} tenantId={tenantId} userId={user?.id || ""} />
-          )}
+          {id && <CompanyActivitySidebar companyId={id} />}
         </div>
       </div>
 
@@ -500,54 +480,10 @@ function DocumentsList({ documents }: { documents: any[] | undefined }) {
   );
 }
 
-function ActivityLogSidebar({ companyId, tenantId, userId }: { companyId: string; tenantId: string; userId: string }) {
-  const [activities, setActivities] = useState<Activity[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [tableReady, setTableReady] = useState(true);
-  const [activityType, setActivityType] = useState<ActivityType>("note");
-  const [content, setContent] = useState("");
-  const [saving, setSaving] = useState(false);
-
-  const fetchActivities = useCallback(async () => {
-    const { data, error } = await supabase
-      .from("crm_activities" as any)
-      .select("*")
-      .eq("company_id", companyId)
-      .eq("tenant_id", tenantId)
-      .order("created_at", { ascending: false })
-      .limit(50);
-    if (error) {
-      if (error.message?.includes("does not exist") || error.code === "42P01") {
-        setTableReady(false);
-      }
-    } else {
-      setActivities((data || []) as unknown as Activity[]);
-    }
-    setLoading(false);
-  }, [companyId, tenantId]);
+function CompanyActivitySidebar({ companyId }: { companyId: string }) {
+  const { activities, loading, fetchActivities } = useActivityLog("company", companyId);
 
   useEffect(() => { fetchActivities(); }, [fetchActivities]);
-
-  const logActivity = async () => {
-    if (!content.trim()) return;
-    setSaving(true);
-    const { error } = await supabase.from("crm_activities" as any).insert({
-      company_id: companyId,
-      tenant_id: tenantId,
-      type: activityType,
-      content: content.trim(),
-      created_by: userId || null,
-    } as any);
-    if (error) {
-      toast.error("Kunne ikke logge aktivitet");
-    } else {
-      setContent("");
-      fetchActivities();
-    }
-    setSaving(false);
-  };
-
-  const activeType = ACTIVITY_TYPES.find(t => t.value === activityType)!;
 
   return (
     <div className="rounded-xl border border-border bg-card overflow-hidden">
@@ -556,77 +492,19 @@ function ActivityLogSidebar({ companyId, tenantId, userId }: { companyId: string
         <span className="text-sm font-semibold">Aktivitetslogg</span>
       </div>
 
-      {/* Logg ny aktivitet */}
-      <div className="p-3 border-b border-border space-y-2">
-        <div className="flex gap-1">
-          {ACTIVITY_TYPES.map(t => (
-            <button
-              key={t.value}
-              onClick={() => setActivityType(t.value)}
-              className={cn(
-                "flex-1 flex flex-col items-center gap-0.5 py-1.5 rounded-lg text-[10px] font-medium transition-all",
-                activityType === t.value
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-muted"
-              )}
-            >
-              <t.icon className="h-3.5 w-3.5" />
-              {t.label}
-            </button>
-          ))}
-        </div>
-        <Textarea
-          value={content}
-          onChange={e => setContent(e.target.value)}
-          placeholder={`Logg ${activeType.label.toLowerCase()}...`}
-          rows={2}
-          className="text-xs resize-none"
-          onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) logActivity(); }}
-        />
-        <Button
-          size="sm"
-          className="w-full h-7 text-xs gap-1.5"
-          onClick={logActivity}
-          disabled={saving || !content.trim()}
-        >
-          {saving ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3 w-3" />}
-          Logg
-        </Button>
-      </div>
+      <ActivityComposer
+        entityType="company"
+        entityId={companyId}
+        onSubmitted={fetchActivities}
+      />
 
-      {/* Liste */}
-      <div className="divide-y divide-border max-h-[480px] overflow-y-auto">
+      <div className="max-h-[480px] overflow-y-auto">
         {loading ? (
           <div className="flex justify-center py-6">
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           </div>
-        ) : !tableReady ? (
-          <div className="p-4 text-center">
-            <p className="text-xs text-muted-foreground">Aktivitetsloggen krever en databasemigrering.</p>
-            <p className="text-[10px] text-muted-foreground mt-1 font-mono">crm_activities</p>
-          </div>
-        ) : activities.length === 0 ? (
-          <div className="py-8 text-center">
-            <MessageSquare className="h-6 w-6 text-muted-foreground/30 mx-auto mb-2" />
-            <p className="text-xs text-muted-foreground">Ingen aktiviteter ennå</p>
-          </div>
         ) : (
-          activities.map(a => {
-            const typeInfo = ACTIVITY_TYPES.find(t => t.value === a.type) || ACTIVITY_TYPES[0];
-            return (
-              <div key={a.id} className="px-4 py-3 flex gap-2.5">
-                <div className={cn("mt-0.5 shrink-0", typeInfo.color)}>
-                  <typeInfo.icon className="h-3.5 w-3.5" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs leading-relaxed text-foreground">{a.content}</p>
-                  <p className="text-[10px] text-muted-foreground mt-1">
-                    {typeInfo.label} · {format(new Date(a.created_at), "d. MMM, HH:mm", { locale: nb })}
-                  </p>
-                </div>
-              </div>
-            );
-          })
+          <ActivityFeedList activities={activities} />
         )}
       </div>
     </div>
