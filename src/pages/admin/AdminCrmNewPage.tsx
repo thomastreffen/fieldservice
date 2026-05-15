@@ -66,7 +66,7 @@ export default function AdminCrmNewPage() {
     },
     onSuccess: () => {
       toast.success("Kontakt opprettet");
-      navigate("/admin/crm");
+      navigate("/admin/crm/contacts");
     },
     onError: () => toast.error("Feil ved oppretting"),
   });
@@ -74,7 +74,7 @@ export default function AdminCrmNewPage() {
   return (
     <div className="max-w-xl space-y-6">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/admin/crm")}>
+        <Button variant="ghost" size="icon" onClick={() => navigate("/admin/crm/contacts")}>
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <h1 className="text-xl font-bold">Ny kontakt</h1>
@@ -163,7 +163,7 @@ export default function AdminCrmNewPage() {
             {create.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
             Opprett kontakt
           </Button>
-          <Button variant="outline" onClick={() => navigate("/admin/crm")}>Avbryt</Button>
+          <Button variant="outline" onClick={() => navigate("/admin/crm/contacts")}>Avbryt</Button>
         </div>
       </div>
     </div>

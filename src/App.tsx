@@ -47,7 +47,8 @@ import AdminSettingsTeamPage from "@/pages/admin/AdminSettingsTeamPage";
 import AdminPlanFormPage from "@/pages/admin/AdminPlanFormPage";
 import AdminCrmPipelinePage from "@/pages/admin/AdminCrmPipelinePage";
 import AdminCrmNewPage from "@/pages/admin/AdminCrmNewPage";
-import AdminCrmDetailPage from "@/pages/admin/AdminCrmDetailPage";
+import AdminCrmContactsPage from "@/pages/admin/AdminCrmContactsPage";
+import AdminCrmContactDetailPage from "@/pages/admin/AdminCrmContactDetailPage";
 import AdminProjectsPage from "@/pages/admin/AdminProjectsPage";
 import AdminProjectNewPage from "@/pages/admin/AdminProjectNewPage";
 import AdminProjectTaskPage from "@/pages/admin/AdminProjectTaskPage";
@@ -226,7 +227,8 @@ function AppRoutes() {
       <Route path="/admin/settings/team" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminSettingsTeamPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/crm" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminCrmPipelinePage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/crm/new" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminCrmNewPage /></MasterAdminLayout></ProtectedRoute>} />
-      <Route path="/admin/crm/:id" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminCrmDetailPage /></MasterAdminLayout></ProtectedRoute>} />
+      <Route path="/admin/crm/contacts" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminCrmContactsPage /></MasterAdminLayout></ProtectedRoute>} />
+      <Route path="/admin/crm/contacts/:id" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminCrmContactDetailPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/projects" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminProjectsPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/projects/new" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminProjectNewPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/projects/:id" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminProjectTaskPage /></MasterAdminLayout></ProtectedRoute>} />
