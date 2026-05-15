@@ -16,6 +16,7 @@ type CmsData = {
   cta_text: string;
   features: Feature[];
   om_oss: string;
+  faq: string;
 };
 
 async function fetchCms(): Promise<CmsData> {
@@ -32,6 +33,7 @@ async function fetchCms(): Promise<CmsData> {
     cta_text: map["cms.hero.cta_text"] ?? "",
     features,
     om_oss: map["cms.om_oss"] ?? "",
+    faq: map["cms.faq"] ?? "",
   };
 }
 
@@ -57,6 +59,8 @@ export default function AdminCmsPage() {
   const [ctaText, setCtaText] = useState("");
   const [features, setFeatures] = useState<Feature[]>([]);
   const [omOss, setOmOss] = useState("");
+  const [faqJson, setFaqJson] = useState("");
+  const [faqError, setFaqError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!data) return;
@@ -65,16 +69,21 @@ export default function AdminCmsPage() {
     setCtaText(data.cta_text);
     setFeatures(data.features);
     setOmOss(data.om_oss);
+    setFaqJson(data.faq ? JSON.stringify(JSON.parse(data.faq), null, 2) : "");
   }, [data]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      if (faqJson.trim()) {
+        try { JSON.parse(faqJson); } catch { throw new Error("FAQ-innhold er ugyldig JSON"); }
+      }
       await Promise.all([
         upsertSetting("cms.hero.headline", headline),
         upsertSetting("cms.hero.subheadline", subheadline),
         upsertSetting("cms.hero.cta_text", ctaText),
         upsertSetting("cms.features", JSON.stringify(features)),
         upsertSetting("cms.om_oss", omOss),
+        ...(faqJson.trim() ? [upsertSetting("cms.faq", faqJson)] : []),
       ]);
     },
     onSuccess: () => {
@@ -220,6 +229,47 @@ export default function AdminCmsPage() {
             rows={5}
             placeholder="Skriv en tekst om selskapet..."
           />
+        </CardContent>
+      </Card>
+
+      {/* FAQ */}
+      <Card className="border-border/50">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base">FAQ — Vanlige spørsmål</CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setFaqJson("");
+                setFaqError(null);
+              }}
+              className="text-xs gap-1"
+            >
+              Tøm (bruk statisk innhold)
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Lim inn JSON-strukturen for FAQ. Tomt felt bruker standardinnholdet.{" "}
+            Format: <code className="font-mono bg-muted px-1 rounded">{"{ \"Kategori\": [{ \"q\": \"...\", \"a\": \"...\" }] }"}</code>
+          </p>
+          <Textarea
+            value={faqJson}
+            onChange={(e) => {
+              setFaqJson(e.target.value);
+              if (e.target.value.trim()) {
+                try { JSON.parse(e.target.value); setFaqError(null); } catch { setFaqError("Ugyldig JSON"); }
+              } else {
+                setFaqError(null);
+              }
+            }}
+            rows={10}
+            placeholder={'{\n  "Kom i gang": [\n    { "q": "Spørsmål?", "a": "Svar." }\n  ]\n}'}
+            className="font-mono text-xs"
+          />
+          {faqError && <p className="text-xs text-destructive">{faqError}</p>}
         </CardContent>
       </Card>
 
