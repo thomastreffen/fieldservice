@@ -45,9 +45,9 @@ import AdminSupportTicketPage from "@/pages/admin/AdminSupportTicketPage";
 import AdminSettingsIntegrationsPage from "@/pages/admin/AdminSettingsIntegrationsPage";
 import AdminSettingsTeamPage from "@/pages/admin/AdminSettingsTeamPage";
 import AdminPlanFormPage from "@/pages/admin/AdminPlanFormPage";
-import AdminSalgPipelinePage from "@/pages/admin/AdminSalgPipelinePage";
-import AdminSalgNewPage from "@/pages/admin/AdminSalgNewPage";
-import AdminSalgDetailPage from "@/pages/admin/AdminSalgDetailPage";
+import AdminCrmPipelinePage from "@/pages/admin/AdminCrmPipelinePage";
+import AdminCrmNewPage from "@/pages/admin/AdminCrmNewPage";
+import AdminCrmDetailPage from "@/pages/admin/AdminCrmDetailPage";
 import AdminProjectsPage from "@/pages/admin/AdminProjectsPage";
 import AdminProjectNewPage from "@/pages/admin/AdminProjectNewPage";
 import AdminProjectTaskPage from "@/pages/admin/AdminProjectTaskPage";
@@ -224,9 +224,9 @@ function AppRoutes() {
       <Route path="/admin/support/:id" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminSupportTicketPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/settings/integrations" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminSettingsIntegrationsPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/settings/team" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminSettingsTeamPage /></MasterAdminLayout></ProtectedRoute>} />
-      <Route path="/admin/salg" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminSalgPipelinePage /></MasterAdminLayout></ProtectedRoute>} />
-      <Route path="/admin/salg/new" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminSalgNewPage /></MasterAdminLayout></ProtectedRoute>} />
-      <Route path="/admin/salg/:id" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminSalgDetailPage /></MasterAdminLayout></ProtectedRoute>} />
+      <Route path="/admin/crm" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminCrmPipelinePage /></MasterAdminLayout></ProtectedRoute>} />
+      <Route path="/admin/crm/new" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminCrmNewPage /></MasterAdminLayout></ProtectedRoute>} />
+      <Route path="/admin/crm/:id" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminCrmDetailPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/projects" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminProjectsPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/projects/new" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminProjectNewPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/projects/:id" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminProjectTaskPage /></MasterAdminLayout></ProtectedRoute>} />

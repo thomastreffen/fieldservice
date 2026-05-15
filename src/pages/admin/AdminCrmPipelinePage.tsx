@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Plus, TrendingUp } from "lucide-react";
+import { Plus, Users } from "lucide-react";
 
 const STAGES = [
   "Ny lead",
@@ -41,7 +41,7 @@ function daysSince(iso: string) {
   return Math.floor((Date.now() - new Date(iso).getTime()) / (1000 * 60 * 60 * 24));
 }
 
-type Lead = {
+type Contact = {
   id: string;
   name: string;
   email: string | null;
@@ -52,44 +52,44 @@ type Lead = {
   verticals: { slug: string; display_name: string } | null;
 };
 
-export default function AdminSalgPipelinePage() {
+export default function AdminCrmPipelinePage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const dragId = useRef<string | null>(null);
 
-  const { data: leads = [], isLoading } = useQuery<Lead[]>({
-    queryKey: ["admin-sales-leads"],
+  const { data: contacts = [], isLoading } = useQuery<Contact[]>({
+    queryKey: ["admin-crm-contacts"],
     staleTime: 30_000,
     queryFn: async () => {
       const { data, error } = await (supabase as any)
-        .from("sales_leads")
+        .from("platform_contacts")
         .select("id, name, email, company, source, deal_stage, created_at, verticals(slug, display_name)")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as Lead[];
+      return data as Contact[];
     },
   });
 
-  const moveLead = useMutation({
+  const moveContact = useMutation({
     mutationFn: async ({ id, stage }: { id: string; stage: string }) => {
       const { error } = await (supabase as any)
-        .from("sales_leads")
+        .from("platform_contacts")
         .update({ deal_stage: stage, updated_at: new Date().toISOString() })
         .eq("id", id);
       if (error) throw error;
     },
     onMutate: async ({ id, stage }) => {
-      await qc.cancelQueries({ queryKey: ["admin-sales-leads"] });
-      const prev = qc.getQueryData<Lead[]>(["admin-sales-leads"]);
-      qc.setQueryData<Lead[]>(["admin-sales-leads"], (old) =>
-        (old ?? []).map((l) => (l.id === id ? { ...l, deal_stage: stage } : l))
+      await qc.cancelQueries({ queryKey: ["admin-crm-contacts"] });
+      const prev = qc.getQueryData<Contact[]>(["admin-crm-contacts"]);
+      qc.setQueryData<Contact[]>(["admin-crm-contacts"], (old) =>
+        (old ?? []).map((c) => (c.id === id ? { ...c, deal_stage: stage } : c))
       );
       return { prev };
     },
     onError: (_err, _vars, ctx) => {
-      if (ctx?.prev) qc.setQueryData(["admin-sales-leads"], ctx.prev);
+      if (ctx?.prev) qc.setQueryData(["admin-crm-contacts"], ctx.prev);
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: ["admin-sales-leads"] }),
+    onSettled: () => qc.invalidateQueries({ queryKey: ["admin-crm-contacts"] }),
   });
 
   if (isLoading) {
@@ -104,17 +104,17 @@ export default function AdminSalgPipelinePage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <TrendingUp className="w-5 h-5 text-primary" />
-          <h1 className="text-xl font-bold">Salgs-pipeline</h1>
+          <Users className="w-5 h-5 text-primary" />
+          <h1 className="text-xl font-bold">CRM Pipeline</h1>
         </div>
-        <Button size="sm" onClick={() => navigate("/admin/salg/new")} className="gap-1.5">
-          <Plus className="w-4 h-4" /> Ny lead
+        <Button size="sm" onClick={() => navigate("/admin/crm/new")} className="gap-1.5">
+          <Plus className="w-4 h-4" /> Ny kontakt
         </Button>
       </div>
 
       <div className="flex gap-4 overflow-x-auto pb-4">
         {STAGES.map((stage) => {
-          const col = leads.filter((l) => l.deal_stage === stage);
+          const col = contacts.filter((c) => c.deal_stage === stage);
           return (
             <div
               key={stage}
@@ -125,7 +125,7 @@ export default function AdminSalgPipelinePage() {
               onDragOver={(e) => e.preventDefault()}
               onDrop={() => {
                 if (dragId.current) {
-                  moveLead.mutate({ id: dragId.current, stage });
+                  moveContact.mutate({ id: dragId.current, stage });
                 }
                 dragId.current = null;
               }}
@@ -134,28 +134,28 @@ export default function AdminSalgPipelinePage() {
                 <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{stage}</span>
                 <span className="text-xs font-bold text-muted-foreground">{col.length}</span>
               </div>
-              {col.map((lead) => (
+              {col.map((contact) => (
                 <div
-                  key={lead.id}
+                  key={contact.id}
                   draggable
-                  onDragStart={() => { dragId.current = lead.id; }}
-                  onClick={() => navigate(`/admin/salg/${lead.id}`)}
+                  onDragStart={() => { dragId.current = contact.id; }}
+                  onClick={() => navigate(`/admin/crm/${contact.id}`)}
                   className="bg-card border border-border rounded-lg p-3 cursor-pointer hover:shadow-md hover:border-primary/30 transition-all space-y-2"
                 >
-                  <p className="font-semibold text-sm leading-tight">{lead.name}</p>
-                  {lead.company && <p className="text-xs text-muted-foreground">{lead.company}</p>}
-                  {lead.email && <p className="text-xs text-muted-foreground truncate">{lead.email}</p>}
+                  <p className="font-semibold text-sm leading-tight">{contact.name}</p>
+                  {contact.company && <p className="text-xs text-muted-foreground">{contact.company}</p>}
+                  {contact.email && <p className="text-xs text-muted-foreground truncate">{contact.email}</p>}
                   <div className="flex flex-wrap gap-1">
-                    <Badge variant="secondary" className={cn("text-[10px] px-1.5 py-0.5", SOURCE_COLORS[lead.source])}>
-                      {SOURCE_LABELS[lead.source] ?? lead.source}
+                    <Badge variant="secondary" className={cn("text-[10px] px-1.5 py-0.5", SOURCE_COLORS[contact.source])}>
+                      {SOURCE_LABELS[contact.source] ?? contact.source}
                     </Badge>
-                    {lead.verticals && (
+                    {contact.verticals && (
                       <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">
-                        {lead.verticals.display_name}
+                        {contact.verticals.display_name}
                       </Badge>
                     )}
                   </div>
-                  <p className="text-[10px] text-muted-foreground">{daysSince(lead.created_at)}d siden</p>
+                  <p className="text-[10px] text-muted-foreground">{daysSince(contact.created_at)}d siden</p>
                 </div>
               ))}
             </div>

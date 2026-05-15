@@ -17,7 +17,7 @@ const ACTIVITY_LABELS: Record<string, string> = {
   notat: "Notat", samtale: "Samtale", møte: "Møte", epost: "E-post",
 };
 
-type Lead = {
+type Contact = {
   id: string;
   name: string;
   email: string | null;
@@ -29,11 +29,9 @@ type Lead = {
   vertical_id: string | null;
   assignee_id: string | null;
   tenant_id: string | null;
-  ticket_id: string | null;
   created_at: string;
   verticals: { id: string; display_name: string } | null;
   tenants: { id: string; name: string } | null;
-  support_tickets: { id: string; title: string } | null;
 };
 
 type Activity = {
@@ -55,7 +53,7 @@ function timeAgo(iso: string) {
   return `${Math.floor(diff / 86400)} d siden`;
 }
 
-export default function AdminSalgDetailPage() {
+export default function AdminCrmDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const qc = useQueryClient();
@@ -73,41 +71,41 @@ export default function AdminSalgDetailPage() {
   const [activityType, setActivityType] = useState("notat");
   const [activityDesc, setActivityDesc] = useState("");
 
-  const { data: lead, isLoading } = useQuery<Lead | null>({
-    queryKey: ["admin-sales-lead", id],
+  const { data: contact, isLoading } = useQuery<Contact | null>({
+    queryKey: ["admin-crm-contact", id],
     enabled: !!id,
     queryFn: async () => {
       const { data, error } = await (supabase as any)
-        .from("sales_leads")
-        .select("*, verticals(id, display_name), tenants(id, name), support_tickets(id, title)")
+        .from("platform_contacts")
+        .select("*, verticals(id, display_name), tenants(id, name)")
         .eq("id", id)
         .single();
       if (error) throw error;
-      return data as Lead;
+      return data as Contact;
     },
   });
 
   useEffect(() => {
-    if (!lead) return;
-    setName(lead.name);
-    setEmail(lead.email ?? "");
-    setCompany(lead.company ?? "");
-    setPhone(lead.phone ?? "");
-    setVerticalId(lead.vertical_id ?? "");
-    setSource(lead.source);
-    setStage(lead.deal_stage);
-    setNotes(lead.notes ?? "");
-    setAssigneeId(lead.assignee_id ?? "");
-  }, [lead]);
+    if (!contact) return;
+    setName(contact.name);
+    setEmail(contact.email ?? "");
+    setCompany(contact.company ?? "");
+    setPhone(contact.phone ?? "");
+    setVerticalId(contact.vertical_id ?? "");
+    setSource(contact.source);
+    setStage(contact.deal_stage);
+    setNotes(contact.notes ?? "");
+    setAssigneeId(contact.assignee_id ?? "");
+  }, [contact]);
 
   const { data: activities = [] } = useQuery<Activity[]>({
-    queryKey: ["admin-sales-activities", id],
+    queryKey: ["admin-crm-activities", id],
     enabled: !!id,
     queryFn: async () => {
       const { data } = await (supabase as any)
-        .from("sales_activities")
+        .from("platform_activities")
         .select("id, type, description, created_at, profiles(full_name)")
-        .eq("lead_id", id)
+        .eq("contact_id", id)
         .order("created_at", { ascending: false });
       return data ?? [];
     },
@@ -140,7 +138,7 @@ export default function AdminSalgDetailPage() {
   const save = useMutation({
     mutationFn: async () => {
       const { error } = await (supabase as any)
-        .from("sales_leads")
+        .from("platform_contacts")
         .update({
           name: name.trim(),
           email: email.trim() || null,
@@ -158,8 +156,8 @@ export default function AdminSalgDetailPage() {
     },
     onSuccess: () => {
       toast.success("Lagret");
-      qc.invalidateQueries({ queryKey: ["admin-sales-lead", id] });
-      qc.invalidateQueries({ queryKey: ["admin-sales-leads"] });
+      qc.invalidateQueries({ queryKey: ["admin-crm-contact", id] });
+      qc.invalidateQueries({ queryKey: ["admin-crm-contacts"] });
     },
     onError: () => toast.error("Lagring feilet"),
   });
@@ -167,8 +165,8 @@ export default function AdminSalgDetailPage() {
   const addActivity = useMutation({
     mutationFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      const { error } = await (supabase as any).from("sales_activities").insert({
-        lead_id: id,
+      const { error } = await (supabase as any).from("platform_activities").insert({
+        contact_id: id,
         type: activityType,
         description: activityDesc.trim() || null,
         performed_by: user?.id ?? null,
@@ -177,7 +175,7 @@ export default function AdminSalgDetailPage() {
     },
     onSuccess: () => {
       setActivityDesc("");
-      qc.invalidateQueries({ queryKey: ["admin-sales-activities", id] });
+      qc.invalidateQueries({ queryKey: ["admin-crm-activities", id] });
     },
     onError: () => toast.error("Feil ved logging"),
   });
@@ -185,7 +183,7 @@ export default function AdminSalgDetailPage() {
   const convertToTenant = () => {
     setStage("Konvertert");
     save.mutate();
-    toast.info("Lead markert som Konvertert. Opprett tenant manuelt under Tenants.");
+    toast.info("Kontakt markert som Konvertert. Opprett tenant manuelt under Tenants.");
   };
 
   if (isLoading) {
@@ -196,18 +194,18 @@ export default function AdminSalgDetailPage() {
     );
   }
 
-  if (!lead) {
-    return <p className="text-muted-foreground">Lead ikke funnet.</p>;
+  if (!contact) {
+    return <p className="text-muted-foreground">Kontakt ikke funnet.</p>;
   }
 
   return (
     <div className="max-w-3xl space-y-6">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/admin/salg")}>
+        <Button variant="ghost" size="icon" onClick={() => navigate("/admin/crm")}>
           <ArrowLeft className="w-4 h-4" />
         </Button>
-        <h1 className="text-xl font-bold flex-1 truncate">{lead.name}</h1>
-        <Badge variant="outline">{lead.deal_stage}</Badge>
+        <h1 className="text-xl font-bold flex-1 truncate">{contact.name}</h1>
+        <Badge variant="outline">{contact.deal_stage}</Badge>
       </div>
 
       <div className="bg-card border border-border rounded-xl p-6 space-y-4">
@@ -287,21 +285,14 @@ export default function AdminSalgDetailPage() {
             {save.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
             Lagre
           </Button>
-          {lead.tenant_id && (
+          {contact.tenant_id && (
             <Button variant="outline" size="sm" asChild className="gap-1.5">
-              <Link to={`/admin/tenants/${lead.tenant_id}`}>
+              <Link to={`/admin/tenants/${contact.tenant_id}`}>
                 <ExternalLink className="w-3.5 h-3.5" /> Se tenant
               </Link>
             </Button>
           )}
-          {lead.ticket_id && (
-            <Button variant="outline" size="sm" asChild className="gap-1.5">
-              <Link to={`/admin/support/${lead.ticket_id}`}>
-                <ExternalLink className="w-3.5 h-3.5" /> Se support-sak
-              </Link>
-            </Button>
-          )}
-          {lead.deal_stage !== "Konvertert" && !lead.tenant_id && (
+          {contact.deal_stage !== "Konvertert" && !contact.tenant_id && (
             <Button variant="secondary" size="sm" className="ml-auto" onClick={convertToTenant}>
               Konverter til tenant
             </Button>

@@ -25,7 +25,7 @@ const navItems = [
   { label: "Integrasjoner", href: "/admin/integrations", icon: Plug },
   { label: "Tilgangsstyring", href: "/admin/access-control", icon: Shield },
   { label: "Support", href: "/admin/support", icon: TicketCheck },
-  { label: "Salg", href: "/admin/salg", icon: TrendingUp },
+  { label: "CRM", href: "/admin/crm", icon: TrendingUp },
   { label: "Prosjekter", href: "/admin/projects", icon: Kanban },
   { label: "CMS", href: "/admin/cms", icon: Globe },
   { label: "Team", href: "/admin/settings/team", icon: Users },

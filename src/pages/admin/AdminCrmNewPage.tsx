@@ -13,7 +13,7 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 type Vertical = { id: string; display_name: string };
 type Profile = { user_id: string; full_name: string | null; email: string | null };
 
-export default function AdminSalgNewPage() {
+export default function AdminCrmNewPage() {
   const navigate = useNavigate();
 
   const [name, setName] = useState("");
@@ -51,7 +51,7 @@ export default function AdminSalgNewPage() {
 
   const create = useMutation({
     mutationFn: async () => {
-      const { error } = await (supabase as any).from("sales_leads").insert({
+      const { error } = await (supabase as any).from("platform_contacts").insert({
         name: name.trim(),
         email: email.trim() || null,
         company: company.trim() || null,
@@ -65,8 +65,8 @@ export default function AdminSalgNewPage() {
       if (error) throw error;
     },
     onSuccess: () => {
-      toast.success("Lead opprettet");
-      navigate("/admin/salg");
+      toast.success("Kontakt opprettet");
+      navigate("/admin/crm");
     },
     onError: () => toast.error("Feil ved oppretting"),
   });
@@ -74,10 +74,10 @@ export default function AdminSalgNewPage() {
   return (
     <div className="max-w-xl space-y-6">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/admin/salg")}>
+        <Button variant="ghost" size="icon" onClick={() => navigate("/admin/crm")}>
           <ArrowLeft className="w-4 h-4" />
         </Button>
-        <h1 className="text-xl font-bold">Ny lead</h1>
+        <h1 className="text-xl font-bold">Ny kontakt</h1>
       </div>
 
       <div className="bg-card border border-border rounded-xl p-6 space-y-4">
@@ -149,7 +149,7 @@ export default function AdminSalgNewPage() {
             id="notes"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Ytterligere informasjon om denne leaden..."
+            placeholder="Ytterligere informasjon..."
             rows={4}
           />
         </div>
@@ -161,9 +161,9 @@ export default function AdminSalgNewPage() {
             className="gap-2"
           >
             {create.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
-            Opprett lead
+            Opprett kontakt
           </Button>
-          <Button variant="outline" onClick={() => navigate("/admin/salg")}>Avbryt</Button>
+          <Button variant="outline" onClick={() => navigate("/admin/crm")}>Avbryt</Button>
         </div>
       </div>
     </div>
