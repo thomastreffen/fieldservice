@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,16 +7,12 @@ import PublicLayout from "@/layouts/PublicLayout";
 import { SeoHead } from "@/components/SeoHead";
 import {
   ArrowRight, Zap, Users, Calendar, Shield, Briefcase, Mail,
-  Thermometer, Droplets, Layers, CheckCircle2, ChevronRight,
+  Thermometer, Droplets, Layers, CheckCircle2, Star,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
 
-const ICONS: Record<string, LucideIcon> = {
-  zap: Zap, users: Users, calendar: Calendar, shield: Shield,
-  briefcase: Briefcase, mail: Mail, thermometer: Thermometer,
-  droplets: Droplets, layers: Layers,
-};
+// ─── Icon maps ────────────────────────────────────────────────────────────────
 const VERTICAL_ICONS: Record<string, LucideIcon> = {
   zap: Zap, thermometer: Thermometer, droplets: Droplets,
 };
@@ -27,8 +23,8 @@ const MODULE_LABELS: Record<string, string> = {
   service_agreements: "Serviceavtaler", el_certificates: "El-sertifikater",
 };
 
+// ─── Types ────────────────────────────────────────────────────────────────────
 type CmsSettings = Record<string, string>;
-type Feature = { icon: string; title: string; description: string };
 type Vertical = {
   id: string; slug: string; display_name: string;
   description: string | null; icon: string | null; color: string | null;
@@ -49,7 +45,45 @@ function useCms() {
   });
 }
 
-/* ── Shared browser chrome wrapper ── */
+// ─── Scroll reveal ────────────────────────────────────────────────────────────
+type RevealDir = "up" | "left" | "right";
+const HIDDEN: Record<RevealDir, string> = {
+  up:    "opacity-0 translate-y-8",
+  left:  "opacity-0 -translate-x-8",
+  right: "opacity-0 translate-x-8",
+};
+
+function Reveal({ children, className, direction = "up", delay = 0 }: {
+  children: ReactNode; className?: string; direction?: RevealDir; delay?: number;
+}) {
+  const [vis, setVis] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) { setTimeout(() => setVis(true), delay); io.disconnect(); } },
+      { threshold: 0.07, rootMargin: "0px 0px -40px 0px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [delay]);
+  return (
+    <div
+      ref={ref}
+      style={{ transitionTimingFunction: "cubic-bezier(0.16,1,0.3,1)" }}
+      className={cn(
+        "transition-[opacity,transform] duration-700",
+        vis ? "opacity-100 translate-y-0 translate-x-0" : HIDDEN[direction],
+        className
+      )}
+    >
+      {children}
+    </div>
+  );
+}
+
+// ─── Mockup components ────────────────────────────────────────────────────────
 function BrowserChrome() {
   return (
     <div className="flex items-center gap-1.5 px-3 py-2 bg-muted/80 border-b border-border">
@@ -61,15 +95,9 @@ function BrowserChrome() {
   );
 }
 
-/* Mini sidebar shared across all mockups */
 function MiniSidebar({ activeIndex = 0 }: { activeIndex?: number }) {
   const items = [
-    { label: "Dashboard", w: "62%" },
-    { label: "Kontakter", w: "68%" },
-    { label: "Jobber", w: "55%" },
-    { label: "Kalender", w: "64%" },
-    { label: "Anlegg", w: "50%" },
-    { label: "Moduler", w: "58%" },
+    { w: "62%" }, { w: "68%" }, { w: "55%" }, { w: "64%" }, { w: "50%" }, { w: "58%" },
   ];
   return (
     <div className="w-[19%] bg-card border-r border-border p-2 space-y-0.5 shrink-0 overflow-hidden">
@@ -78,72 +106,74 @@ function MiniSidebar({ activeIndex = 0 }: { activeIndex?: number }) {
         <div className="h-2 bg-muted-foreground/20 rounded w-12" />
       </div>
       {items.map((item, i) => (
-        <div
-          key={i}
-          className={cn(
-            "h-5 rounded flex items-center gap-1.5 px-1.5",
-            i === activeIndex ? "bg-primary/15" : ""
-          )}
-        >
+        <div key={i} className={cn("h-5 rounded flex items-center gap-1.5 px-1.5", i === activeIndex && "bg-primary/15")}>
           <div className={cn("w-2 h-2 rounded-sm shrink-0", i === activeIndex ? "bg-primary/60" : "bg-muted")} />
-          <div
-            className={cn("h-1.5 rounded", i === activeIndex ? "bg-primary/40" : "bg-muted")}
-            style={{ width: item.w }}
-          />
+          <div className={cn("h-1.5 rounded", i === activeIndex ? "bg-primary/40" : "bg-muted")} style={{ width: item.w }} />
         </div>
       ))}
     </div>
   );
 }
 
-/* ── Dashboard Mockup (hero) ── */
 function DashboardMockup() {
   return (
-    <div className="w-full rounded-xl border border-border/60 shadow-2xl shadow-black/10 overflow-hidden bg-background">
+    <div className="w-full rounded-xl border border-border/60 shadow-2xl shadow-primary/[0.07] overflow-hidden bg-background">
       <BrowserChrome />
-      <div className="flex" style={{ minHeight: 230 }}>
+      <div className="flex" style={{ minHeight: 240 }}>
         <MiniSidebar activeIndex={0} />
         <div className="flex-1 p-3 space-y-2.5 overflow-hidden bg-background">
-          {/* Topbar placeholder */}
           <div className="flex items-center justify-between mb-1">
-            <div className="h-3 bg-muted rounded w-28" />
-            <div className="flex gap-1.5">
-              <div className="w-6 h-6 rounded-full bg-primary/20" />
+            <div className="space-y-0.5">
+              <div className="h-2.5 bg-foreground/15 rounded w-36" />
+              <div className="h-1.5 bg-muted rounded w-24" />
             </div>
+            <div className="w-6 h-6 rounded-full bg-primary/20" />
           </div>
-          {/* KPI cards */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             {[
-              { label: "12", sub: "Aktive jobber", color: "bg-blue-50 dark:bg-blue-950/30", dot: "bg-blue-400" },
-              { label: "4", sub: "Teknikere i dag", color: "bg-emerald-50 dark:bg-emerald-950/30", dot: "bg-emerald-400" },
-              { label: "87k", sub: "Inntekt MTD", color: "bg-violet-50 dark:bg-violet-950/30", dot: "bg-violet-400" },
+              { n: "12", bg: "bg-blue-50",    dot: "bg-blue-400" },
+              { n: "4",  bg: "bg-emerald-50", dot: "bg-emerald-400" },
+              { n: "87k",bg: "bg-violet-50",  dot: "bg-violet-400" },
+              { n: "3",  bg: "bg-orange-50",  dot: "bg-orange-400" },
             ].map((c, i) => (
-              <div key={i} className={cn("rounded-lg p-2", c.color)}>
-                <div className="flex items-center gap-1 mb-1">
-                  <div className={cn("w-1.5 h-1.5 rounded-full", c.dot)} />
-                  <div className="h-1.5 bg-current/10 rounded w-10" />
-                </div>
-                <div className="text-[11px] font-bold opacity-70">{c.label}</div>
-                <div className="h-1.5 bg-current/10 rounded w-14 mt-1" />
+              <div key={i} className={cn("rounded-lg p-2.5", c.bg)}>
+                <div className={cn("w-2 h-2 rounded-full mb-1.5", c.dot)} />
+                <div className="text-[13px] font-bold opacity-60">{c.n}</div>
+                <div className="h-1.5 bg-black/5 rounded w-12 mt-1" />
               </div>
             ))}
           </div>
-          {/* Technician list */}
-          <div className="border border-border rounded-lg overflow-hidden">
-            <div className="px-2.5 py-1.5 bg-muted/40 flex items-center gap-2">
-              <div className="h-1.5 bg-muted-foreground/25 rounded w-20" />
-            </div>
-            {[
-              { dot: "bg-emerald-400", label1: "bg-muted w-14", label2: "bg-emerald-200/80 w-10" },
-              { dot: "bg-amber-400",   label1: "bg-muted w-16", label2: "bg-amber-200/80 w-12" },
-              { dot: "bg-blue-400",    label1: "bg-muted w-12", label2: "bg-blue-200/80 w-8" },
-            ].map((row, i) => (
-              <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 border-t border-border">
-                <div className={cn("w-2 h-2 rounded-full shrink-0", row.dot)} />
-                <div className={cn("h-1.5 rounded flex-1", row.label1)} />
-                <div className={cn("h-1.5 rounded", row.label2)} />
+          <div className="grid grid-cols-2 gap-2.5">
+            <div className="border border-border rounded-lg overflow-hidden">
+              <div className="px-2.5 py-1.5 bg-muted/40 border-b border-border">
+                <div className="h-1.5 bg-muted-foreground/25 rounded w-24" />
               </div>
-            ))}
+              {[
+                { dot: "bg-emerald-400", badge: "bg-emerald-100" },
+                { dot: "bg-amber-400",   badge: "bg-amber-100" },
+                { dot: "bg-blue-400",    badge: "bg-blue-100" },
+                { dot: "bg-gray-300",    badge: "bg-gray-100" },
+              ].map((row, i) => (
+                <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 border-t border-border">
+                  <div className={cn("w-2 h-2 rounded-full shrink-0", row.dot)} />
+                  <div className="h-1.5 rounded flex-1 bg-muted" />
+                  <div className={cn("h-3 w-8 rounded-full", row.badge)} />
+                </div>
+              ))}
+            </div>
+            <div className="border border-border rounded-lg overflow-hidden">
+              <div className="px-2.5 py-1.5 bg-muted/40 border-b border-border">
+                <div className="h-1.5 bg-muted-foreground/25 rounded w-28" />
+              </div>
+              {[true, true, true, false, false].map((done, i) => (
+                <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 border-t border-border">
+                  <div className={cn("w-3 h-3 rounded-sm border shrink-0 flex items-center justify-center", done ? "bg-primary/80 border-primary" : "border-border")}>
+                    {done && <div className="w-1.5 h-1 border-b border-r border-white rotate-45 -translate-y-px" />}
+                  </div>
+                  <div className={cn("h-1.5 rounded flex-1", done ? "bg-muted" : "bg-muted-foreground/15")} />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -151,44 +181,30 @@ function DashboardMockup() {
   );
 }
 
-/* ── Jobs Screen Mockup ── */
 function JobsMockup() {
   const badges = [
-    { label: "Pågår", cls: "bg-amber-100 text-amber-700" },
+    { label: "Pågår",    cls: "bg-amber-100 text-amber-700" },
     { label: "Fullført", cls: "bg-emerald-100 text-emerald-700" },
-    { label: "Åpen", cls: "bg-blue-100 text-blue-700" },
+    { label: "Åpen",     cls: "bg-blue-100 text-blue-700" },
     { label: "Avventer", cls: "bg-gray-100 text-gray-500" },
     { label: "Fullført", cls: "bg-emerald-100 text-emerald-700" },
   ];
-  const rows = [
-    ["#JB-142", "Larsen VVS AS", "Servicebesøk", 0],
-    ["#JB-141", "Hansen Elektro", "Installasjon",  1],
-    ["#JB-140", "Moen Bygg AS",   "Reparasjon",    2],
-    ["#JB-139", "Nilsen AS",      "Inspeksjon",    3],
-    ["#JB-138", "Berg Service",   "Servicebesøk",  4],
-  ];
   return (
     <div className="flex-1 p-3 overflow-hidden bg-background space-y-2">
-      {/* Toolbar */}
       <div className="flex items-center gap-2 mb-1">
         <div className="h-6 rounded bg-muted flex-1" />
         <div className="h-6 w-14 rounded bg-primary/70" />
       </div>
-      {/* Table */}
-      <div className="border border-border rounded-lg overflow-hidden text-[10px]">
+      <div className="border border-border rounded-lg overflow-hidden">
         <div className="grid grid-cols-[40px_1fr_1fr_70px_55px] gap-x-2 px-2.5 py-1.5 bg-muted/40 border-b border-border">
-          {["ID", "Kunde", "Type", "Status", "Dato"].map((h) => (
-            <div key={h} className="h-1.5 bg-muted-foreground/30 rounded" />
-          ))}
+          {[0,1,2,3,4].map((i) => <div key={i} className="h-1.5 bg-muted-foreground/30 rounded" />)}
         </div>
-        {rows.map(([id, kunde, type, bi], i) => (
+        {badges.map((b, i) => (
           <div key={i} className="grid grid-cols-[40px_1fr_1fr_70px_55px] gap-x-2 px-2.5 py-1.5 border-t border-border items-center">
             <div className="h-1.5 bg-muted rounded" style={{ width: "80%" }} />
             <div className="h-1.5 bg-muted rounded" style={{ width: "75%" }} />
             <div className="h-1.5 bg-muted rounded" style={{ width: "65%" }} />
-            <div className={cn("rounded-full px-1.5 py-0.5 text-[8px] font-semibold leading-tight inline-block truncate", badges[bi as number].cls)}>
-              {badges[bi as number].label}
-            </div>
+            <div className={cn("rounded-full px-1.5 py-0.5 text-[8px] font-semibold leading-tight inline-block", b.cls)}>{b.label}</div>
             <div className="h-1.5 bg-muted rounded" style={{ width: "70%" }} />
           </div>
         ))}
@@ -197,46 +213,35 @@ function JobsMockup() {
   );
 }
 
-/* ── Planner Screen Mockup ── */
 function PlannerMockup() {
   const days = ["Man", "Tir", "Ons", "Tor", "Fre"];
-  const techRows = [
-    { initials: "ON", blocks: [true, false, true, true, false], colors: ["bg-blue-200", "", "bg-blue-300", "bg-blue-200", ""] },
-    { initials: "PA", blocks: [false, true, true, false, true], colors: ["", "bg-violet-200", "bg-violet-300", "", "bg-violet-200"] },
-    { initials: "LM", blocks: [true, true, false, true, true], colors: ["bg-emerald-200", "bg-emerald-300", "", "bg-emerald-200", "bg-emerald-200"] },
-    { initials: "KH", blocks: [false, false, true, true, false], colors: ["", "", "bg-amber-200", "bg-amber-300", ""] },
+  const rows = [
+    { initials: "ON", blocks: [true,false,true,true,false], colors: ["bg-blue-200","","bg-blue-300","bg-blue-200",""] },
+    { initials: "PA", blocks: [false,true,true,false,true], colors: ["","bg-violet-200","bg-violet-300","","bg-violet-200"] },
+    { initials: "LM", blocks: [true,true,false,true,true], colors: ["bg-emerald-200","bg-emerald-300","","bg-emerald-200","bg-emerald-200"] },
+    { initials: "KH", blocks: [false,false,true,true,false], colors: ["","","bg-amber-200","bg-amber-300",""] },
   ];
   return (
     <div className="flex-1 p-3 overflow-hidden bg-background space-y-2">
-      {/* Week nav */}
       <div className="flex items-center gap-2 mb-1">
         <div className="h-5 w-5 rounded bg-muted" />
         <div className="h-2 bg-muted rounded w-24" />
         <div className="h-5 w-5 rounded bg-muted" />
         <div className="ml-auto h-5 w-12 rounded bg-primary/70" />
       </div>
-      {/* Grid */}
       <div className="border border-border rounded-lg overflow-hidden">
-        {/* Header */}
         <div className="grid grid-cols-[52px_1fr_1fr_1fr_1fr_1fr] border-b border-border bg-muted/40">
-          <div className="px-2 py-1.5" />
-          {days.map((d) => (
-            <div key={d} className="px-1 py-1.5 text-[9px] font-semibold text-center text-muted-foreground">{d}</div>
-          ))}
+          <div />
+          {days.map((d) => <div key={d} className="px-1 py-1.5 text-[9px] font-semibold text-center text-muted-foreground">{d}</div>)}
         </div>
-        {/* Rows */}
-        {techRows.map((row, ri) => (
+        {rows.map((row, ri) => (
           <div key={ri} className="grid grid-cols-[52px_1fr_1fr_1fr_1fr_1fr] border-t border-border">
             <div className="flex items-center px-2 py-2">
-              <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-[7px] font-bold text-primary shrink-0">
-                {row.initials}
-              </div>
+              <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-[7px] font-bold text-primary shrink-0">{row.initials}</div>
             </div>
             {row.blocks.map((has, di) => (
               <div key={di} className="p-0.5 min-h-[28px] flex items-center">
-                {has && (
-                  <div className={cn("rounded w-full h-5", row.colors[di])} />
-                )}
+                {has && <div className={cn("rounded w-full h-5", row.colors[di])} />}
               </div>
             ))}
           </div>
@@ -246,33 +251,20 @@ function PlannerMockup() {
   );
 }
 
-/* ── Contacts Screen Mockup ── */
 function ContactsMockup() {
-  const rows = [
-    { initials: "OL", name: "Ole Larsen",    company: "Larsen VVS AS",   age: "3d" },
-    { initials: "AN", name: "Anna Nilsen",   company: "Moen Bygg AS",    age: "1u" },
-    { initials: "PH", name: "Per Hansen",    company: "Hansen Elektro",  age: "4d" },
-    { initials: "KB", name: "Kari Berg",     company: "Berg Service AS", age: "2d" },
-  ];
   return (
     <div className="flex-1 p-3 overflow-hidden bg-background space-y-2">
-      {/* Search + button */}
       <div className="flex items-center gap-2 mb-1">
         <div className="h-6 rounded bg-muted flex-1" />
         <div className="h-6 w-20 rounded bg-primary/70" />
       </div>
-      {/* Table */}
       <div className="border border-border rounded-lg overflow-hidden">
         <div className="grid grid-cols-[24px_1fr_1fr_50px] gap-x-2 px-2.5 py-1.5 bg-muted/40 border-b border-border">
-          {["", "Navn / Bedrift", "E-post", "Kontakt"].map((h, i) => (
-            <div key={i} className="h-1.5 bg-muted-foreground/25 rounded" />
-          ))}
+          {[0,1,2,3].map((i) => <div key={i} className="h-1.5 bg-muted-foreground/25 rounded" />)}
         </div>
-        {rows.map((row, i) => (
+        {["OL","AN","PH","KB"].map((initials, i) => (
           <div key={i} className="grid grid-cols-[24px_1fr_1fr_50px] gap-x-2 px-2.5 py-1.5 border-t border-border items-center">
-            <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-[7px] font-bold text-primary">
-              {row.initials}
-            </div>
+            <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-[7px] font-bold text-primary">{initials}</div>
             <div className="space-y-1">
               <div className="h-1.5 bg-muted rounded" style={{ width: "75%" }} />
               <div className="h-1.5 bg-muted/60 rounded" style={{ width: "60%" }} />
@@ -286,50 +278,57 @@ function ContactsMockup() {
   );
 }
 
+function FeatureMockupWindow({ activeIndex, children }: { activeIndex: number; children: ReactNode }) {
+  return (
+    <div className="w-full rounded-xl border border-border/60 shadow-2xl shadow-black/[0.07] overflow-hidden bg-background">
+      <BrowserChrome />
+      <div className="flex" style={{ minHeight: 280 }}>
+        <MiniSidebar activeIndex={activeIndex} />
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ─── App Showcase ─────────────────────────────────────────────────────────────
 const SCREEN_TABS = [
-  { key: "dashboard", label: "Dashboard", desc: "Oversikt over dagen, KPI-er og teknikere" },
-  { key: "jobs",      label: "Jobbstyring", desc: "Alle jobber med status og filtrering" },
-  { key: "planner",   label: "Ressursplanlegger", desc: "Ukentlig planlegging med dra-og-slipp" },
-  { key: "contacts",  label: "CRM Kontakter", desc: "Kontaktpersoner og kundehistorikk" },
+  { key: "dashboard", label: "Dashboard",        desc: "Oversikt over dagen, KPI-er og teknikere",    idx: 0 },
+  { key: "jobs",      label: "Jobbstyring",       desc: "Alle jobber med status og filtrering",        idx: 2 },
+  { key: "planner",   label: "Ressursplanlegger", desc: "Ukentlig planlegging med dra-og-slipp",       idx: 3 },
+  { key: "contacts",  label: "CRM Kontakter",     desc: "Kontaktpersoner og kundehistorikk",           idx: 1 },
 ];
 
 function AppShowcaseSection() {
   const [active, setActive] = useState("dashboard");
   const current = SCREEN_TABS.find((t) => t.key === active)!;
-
   return (
-    <section className="py-20 bg-muted/20 border-y border-border">
+    <section className="py-24 bg-background border-y border-border">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        <div className="text-center mb-10">
-          <h2 className="text-3xl font-bold tracking-tight mb-3">Se systemet i aksjon</h2>
-          <p className="text-muted-foreground max-w-xl mx-auto">
-            Intuitivt design bygget for servicehverdagen — fra kontor til felt.
-          </p>
-        </div>
-
-        {/* Tab bar */}
-        <div className="flex flex-wrap gap-2 justify-center mb-8">
+        <Reveal className="text-center mb-10">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary mb-3">PRODUKTET</p>
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3">Se systemet i aksjon</h2>
+          <p className="text-muted-foreground max-w-xl mx-auto">Intuitivt design bygget for servicehverdagen — fra kontor til felt.</p>
+        </Reveal>
+        <Reveal delay={80} className="flex flex-wrap gap-2 justify-center mb-8">
           {SCREEN_TABS.map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActive(tab.key)}
               className={cn(
-                "px-4 py-2 rounded-lg text-sm font-medium transition-all border",
+                "px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 border",
                 active === tab.key
-                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                  : "bg-background text-muted-foreground border-border hover:text-foreground hover:border-primary/40"
+                  ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20"
+                  : "bg-background text-muted-foreground border-border hover:text-foreground hover:border-primary/40 hover:bg-primary/5"
               )}
             >
               {tab.label}
             </button>
           ))}
-        </div>
-
-        {/* Mockup window */}
-        <div className="w-full rounded-xl border border-border/60 shadow-2xl shadow-black/10 overflow-hidden bg-background">
+        </Reveal>
+        <Reveal delay={140} className="w-full rounded-xl border border-border/60 shadow-2xl shadow-black/[0.07] overflow-hidden bg-background">
           <BrowserChrome />
           <div className="flex" style={{ minHeight: 340 }}>
-            <MiniSidebar activeIndex={active === "dashboard" ? 0 : active === "contacts" ? 1 : active === "jobs" ? 2 : 3} />
+            <MiniSidebar activeIndex={current.idx} />
             {active === "dashboard" && (
               <div className="flex-1 p-3 overflow-hidden bg-background space-y-2.5">
                 <div className="flex items-center justify-between mb-0.5">
@@ -337,55 +336,43 @@ function AppShowcaseSection() {
                     <div className="h-2.5 bg-foreground/15 rounded w-40" />
                     <div className="h-1.5 bg-muted rounded w-28" />
                   </div>
-                  <div className="flex gap-1.5">
-                    <div className="w-6 h-6 rounded-full bg-primary/15" />
-                  </div>
+                  <div className="w-6 h-6 rounded-full bg-primary/15" />
                 </div>
-                {/* KPI row */}
                 <div className="grid grid-cols-4 gap-2">
                   {[
-                    { n: "12", lbl: "Aktive jobber",  bg: "bg-blue-50 dark:bg-blue-950/30",    dot: "bg-blue-400" },
-                    { n: "4",  lbl: "Teknikere",       bg: "bg-emerald-50 dark:bg-emerald-950/30", dot: "bg-emerald-400" },
-                    { n: "87k",lbl: "Inntekt MTD",     bg: "bg-violet-50 dark:bg-violet-950/30",  dot: "bg-violet-400" },
-                    { n: "3",  lbl: "Åpne varsler",    bg: "bg-orange-50 dark:bg-orange-950/30",  dot: "bg-orange-400" },
+                    { n: "12", bg: "bg-blue-50",    dot: "bg-blue-400" },
+                    { n: "4",  bg: "bg-emerald-50", dot: "bg-emerald-400" },
+                    { n: "87k",bg: "bg-violet-50",  dot: "bg-violet-400" },
+                    { n: "3",  bg: "bg-orange-50",  dot: "bg-orange-400" },
                   ].map((c, i) => (
                     <div key={i} className={cn("rounded-lg p-2.5", c.bg)}>
                       <div className={cn("w-2 h-2 rounded-full mb-1.5", c.dot)} />
                       <div className="text-[13px] font-bold opacity-60">{c.n}</div>
-                      <div className="h-1.5 bg-current/10 rounded w-14 mt-1.5" />
+                      <div className="h-1.5 bg-black/5 rounded w-14 mt-1.5" />
                     </div>
                   ))}
                 </div>
-                {/* Two column layout */}
-                <div className="grid grid-cols-[1fr_1fr] gap-2.5">
-                  {/* Teknikere i dag */}
+                <div className="grid grid-cols-2 gap-2.5">
                   <div className="border border-border rounded-lg overflow-hidden">
-                    <div className="px-2.5 py-1.5 bg-muted/40 border-b border-border">
-                      <div className="h-1.5 bg-muted-foreground/25 rounded w-24" />
-                    </div>
+                    <div className="px-2.5 py-1.5 bg-muted/40 border-b border-border"><div className="h-1.5 bg-muted-foreground/25 rounded w-24" /></div>
                     {[
-                      { dot: "bg-emerald-400", w1: "w-16", w2: "w-10", badge: "bg-emerald-100" },
-                      { dot: "bg-amber-400",   w1: "w-14", w2: "w-12", badge: "bg-amber-100" },
-                      { dot: "bg-blue-400",    w1: "w-12", w2: "w-8",  badge: "bg-blue-100" },
-                      { dot: "bg-gray-300",    w1: "w-15", w2: "w-9",  badge: "bg-gray-100" },
+                      { dot: "bg-emerald-400", badge: "bg-emerald-100" },
+                      { dot: "bg-amber-400",   badge: "bg-amber-100" },
+                      { dot: "bg-blue-400",    badge: "bg-blue-100" },
+                      { dot: "bg-gray-300",    badge: "bg-gray-100" },
                     ].map((row, i) => (
                       <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 border-t border-border">
                         <div className={cn("w-2 h-2 rounded-full shrink-0", row.dot)} />
-                        <div className={cn("h-1.5 rounded flex-1 bg-muted")} />
+                        <div className="h-1.5 rounded flex-1 bg-muted" />
                         <div className={cn("h-3 w-8 rounded-full", row.badge)} />
                       </div>
                     ))}
                   </div>
-                  {/* Oppstartssjekk */}
                   <div className="border border-border rounded-lg overflow-hidden">
-                    <div className="px-2.5 py-1.5 bg-muted/40 border-b border-border">
-                      <div className="h-1.5 bg-muted-foreground/25 rounded w-28" />
-                    </div>
-                    {[true, true, true, false, false].map((done, i) => (
+                    <div className="px-2.5 py-1.5 bg-muted/40 border-b border-border"><div className="h-1.5 bg-muted-foreground/25 rounded w-28" /></div>
+                    {[true,true,true,false,false].map((done, i) => (
                       <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 border-t border-border">
-                        <div className={cn("w-3 h-3 rounded-sm border shrink-0 flex items-center justify-center",
-                          done ? "bg-primary/80 border-primary" : "border-border"
-                        )}>
+                        <div className={cn("w-3 h-3 rounded-sm border shrink-0 flex items-center justify-center", done ? "bg-primary/80 border-primary" : "border-border")}>
                           {done && <div className="w-1.5 h-1 border-b border-r border-white rotate-45 -translate-y-px" />}
                         </div>
                         <div className={cn("h-1.5 rounded flex-1", done ? "bg-muted" : "bg-muted-foreground/15")} />
@@ -395,13 +382,11 @@ function AppShowcaseSection() {
                 </div>
               </div>
             )}
-            {active === "jobs" && <JobsMockup />}
-            {active === "planner" && <PlannerMockup />}
+            {active === "jobs"     && <JobsMockup />}
+            {active === "planner"  && <PlannerMockup />}
             {active === "contacts" && <ContactsMockup />}
           </div>
-        </div>
-
-        {/* Caption */}
+        </Reveal>
         <p className="text-center text-sm text-muted-foreground mt-4">
           <span className="font-medium text-foreground">{current.label}:</span> {current.desc}
         </p>
@@ -410,31 +395,61 @@ function AppShowcaseSection() {
   );
 }
 
+// ─── Static data ──────────────────────────────────────────────────────────────
 const TESTIMONIALS = [
-  { initials: "OL", name: "Ole Larsen", company: "Larsen VVS AS", vertical: "VVS", quote: "FieldService har fullstendig forandret hvordan vi jobber. Alle jobber, kunder og avtaler på ett sted — endelig.", color: "#06b6d4" },
+  { initials: "OL", name: "Ole Larsen",  company: "Larsen VVS AS",      vertical: "VVS",        quote: "FieldService har fullstendig forandret hvordan vi jobber. Alle jobber, kunder og avtaler på ett sted — endelig.", color: "#06b6d4" },
   { initials: "AM", name: "Astrid Moen", company: "Norsk Varmepumpe AS", vertical: "Varmepumpe", quote: "Ressursplanleggeren alene er verdt prisen. Vi slipper å ringe rundt for å finne ledig tekniker.", color: "#6366f1" },
-  { initials: "KH", name: "Knut Hansen", company: "Hansen Elektro", vertical: "Elektro", quote: "Enkelt å komme i gang, og support er lynrask. Anbefales sterkt til alle servicebedrifter.", color: "#f59e0b" },
+  { initials: "KH", name: "Knut Hansen", company: "Hansen Elektro",      vertical: "Elektro",    quote: "Enkelt å komme i gang, og support er lynrask. Anbefales sterkt til alle servicebedrifter.", color: "#f59e0b" },
 ];
 
-const STATIC_FEATURES = [
-  { icon: "briefcase", title: "Jobbstyring", description: "Opprett, planlegg og følg opp alle jobber fra ett sted. Full historikk og statusoversikt." },
-  { icon: "users", title: "CRM og kunder", description: "Komplett kundekort med kontakter, anlegg, jobber og avtaler samlet på én plass." },
-  { icon: "calendar", title: "Ressursplanlegger", description: "Visuell planlegging med dra-og-slipp. Se hvem som er ledig og book direkte." },
-  { icon: "zap", title: "Serviceavtaler", description: "Hold styr på alle avtaler med automatiske fornyelsesvarslinger og oppfølging." },
-  { icon: "mail", title: "Postkontoret", description: "Innebygd kommunikasjon med kunder og team. Ingen e-post som faller mellom stolene." },
-  { icon: "shield", title: "HMS", description: "Dokumenter avvik, risikovurderinger og HMS-rutiner direkte i felten." },
+const FEATURE_ROWS = [
+  {
+    label: "JOBBSTYRING",
+    title: "Alle oppdrag under full kontroll",
+    description: "Opprett, tilordne og følg opp jobber i sanntid. Fra kundebestilling til ferdig rapport — alt på ett sted.",
+    bullets: [
+      "Opprett jobber med ett klikk fra kundekortet",
+      "Tilordne teknikere og sett frister automatisk",
+      "Statusoppdateringer i sanntid fra felten",
+    ],
+    mockupIdx: 2,
+    Mockup: JobsMockup,
+    flip: false,
+  },
+  {
+    label: "RESSURSPLANLEGGER",
+    title: "Visuell planlegging med dra-og-slipp",
+    description: "Se hvem som er ledig, book direkte i planleggeren og unngå dobbeltbooking. Enkelt og oversiktlig.",
+    bullets: [
+      "Ukentlig oversikt over alle teknikere",
+      "Dra-og-slipp for rask omplanlegging",
+      "Kapasitetsvisning og fravær i ett bilde",
+    ],
+    mockupIdx: 3,
+    Mockup: PlannerMockup,
+    flip: true,
+  },
+  {
+    label: "CRM OG KUNDER",
+    title: "Komplett kundekort med full historikk",
+    description: "Samle alle kontakter, anlegg, jobber og avtaler på ett sted. Spar tid og gi bedre service.",
+    bullets: [
+      "Full historikk på alle anlegg og kunder",
+      "Automatiske fornyelsesvarslinger på avtaler",
+      "Søk og filtrer på tvers av hele kundebasen",
+    ],
+    mockupIdx: 1,
+    Mockup: ContactsMockup,
+    flip: false,
+  },
 ];
 
+// ─── Page ─────────────────────────────────────────────────────────────────────
 export default function LandingPage() {
   const { data: cms } = useCms();
-
-  const headline = cms?.["cms.hero.headline"] ?? "Alt du trenger for feltservice – på ett sted";
+  const headline    = cms?.["cms.hero.headline"]    ?? "Alt du trenger for feltservice – på ett sted";
   const subheadline = cms?.["cms.hero.subheadline"] ?? "FieldService er et moderne system for servicebedrifter. Start gratis prøveperiode i dag.";
-  const ctaText = cms?.["cms.hero.cta_text"] ?? "Start gratis prøveperiode";
-
-  let cmsFeatures: Feature[] = [];
-  try { cmsFeatures = JSON.parse(cms?.["cms.features"] ?? "[]"); } catch {}
-  const features = cmsFeatures.length > 0 ? cmsFeatures : STATIC_FEATURES;
+  const ctaText     = cms?.["cms.hero.cta_text"]    ?? "Start gratis prøveperiode";
 
   const { data: verticals } = useQuery<Vertical[]>({
     queryKey: ["public_verticals"],
@@ -456,117 +471,177 @@ export default function LandingPage() {
         description="Moderne field service system for varmepumpe, elektro og VVS-bedrifter. Start gratis prøveperiode i dag."
         canonicalPath="/"
       />
-      {/* ── Hero ── */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-muted/50 via-muted/20 to-background pt-16 pb-20">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 grid lg:grid-cols-2 gap-12 items-center">
-          <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold mb-5">
+
+      {/* ── 1. Hero ─────────────────────────────────────────────────────────── */}
+      <section className="relative overflow-hidden bg-background pt-16 pb-24">
+        <div className="pointer-events-none absolute -top-24 -right-24 w-[700px] h-[700px] rounded-full bg-primary/[0.07] blur-[120px]" />
+        <div className="pointer-events-none absolute top-1/2 -left-40 w-[500px] h-[500px] rounded-full bg-violet-400/[0.05] blur-[90px]" />
+
+        <div className="relative max-w-6xl mx-auto px-4 sm:px-6 grid lg:grid-cols-2 gap-14 items-center">
+          <Reveal direction="left">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold mb-7">
               <CheckCircle2 className="w-3.5 h-3.5" /> 14 dager gratis — ingen kredittkort
             </div>
-            <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight leading-[1.1] mb-5">
+            <h1 className="text-5xl sm:text-6xl font-black tracking-tight leading-[1.05] mb-6">
               {headline}
             </h1>
-            <p className="text-lg text-muted-foreground leading-relaxed mb-8 max-w-lg">
+            <p className="text-xl text-muted-foreground leading-relaxed mb-9 max-w-lg">
               {subheadline}
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
-              <Button size="lg" asChild className="gap-2 h-12 px-7 text-base">
+              <Button
+                size="lg"
+                asChild
+                className="gap-2 h-12 px-8 text-base font-semibold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+              >
                 <Link to="/register">{ctaText} <ArrowRight className="w-4 h-4" /></Link>
               </Button>
-              <Button size="lg" variant="outline" asChild className="h-12 px-7 text-base">
+              <Button
+                size="lg"
+                variant="outline"
+                asChild
+                className="h-12 px-8 text-base hover:border-primary/50 hover:bg-primary/5 transition-all duration-200"
+              >
                 <Link to="/kontakt">Ta kontakt med oss</Link>
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground mt-4 flex flex-wrap gap-3">
-              <span className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-emerald-500" /> Full tilgang i 14 dager</span>
-              <span className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-emerald-500" /> Ingen kredittkort</span>
-              <span className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-emerald-500" /> Data beholdes ved oppgradering</span>
-            </p>
-          </div>
-          <div className="hidden lg:block">
+            <div className="flex flex-wrap gap-x-5 gap-y-2 mt-6">
+              {["Full tilgang i 14 dager", "Ingen kredittkort", "Data beholdes ved oppgradering"].map((t) => (
+                <span key={t} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" /> {t}
+                </span>
+              ))}
+            </div>
+          </Reveal>
+
+          <Reveal direction="right" delay={160} className="hidden lg:block">
             <DashboardMockup />
-          </div>
+          </Reveal>
         </div>
-        <div className="pointer-events-none absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
       </section>
 
-      {/* ── App Showcase ── */}
+      {/* ── 2. Feature alternating rows ─────────────────────────────────────── */}
+      <section className="bg-violet-50/70 border-y border-violet-100">
+        {FEATURE_ROWS.map((feat) => (
+          <div key={feat.label} className="border-b border-violet-100/60 last:border-0">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 py-20">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-14 items-center">
+                <Reveal direction={feat.flip ? "right" : "left"} className={cn(feat.flip && "lg:order-2")}>
+                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary mb-3">{feat.label}</p>
+                  <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight leading-tight mb-4">{feat.title}</h2>
+                  <p className="text-lg text-muted-foreground leading-relaxed mb-6">{feat.description}</p>
+                  <ul className="space-y-3 mb-7">
+                    {feat.bullets.map((b) => (
+                      <li key={b} className="flex items-start gap-3">
+                        <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                          <CheckCircle2 className="w-3 h-3 text-primary" />
+                        </div>
+                        <span className="text-sm text-muted-foreground leading-relaxed">{b}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Link
+                    to="/register"
+                    className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:gap-3 transition-all duration-200"
+                  >
+                    Kom i gang gratis <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </Reveal>
+
+                <Reveal direction={feat.flip ? "left" : "right"} delay={120} className={cn(feat.flip && "lg:order-1")}>
+                  <FeatureMockupWindow activeIndex={feat.mockupIdx}>
+                    <feat.Mockup />
+                  </FeatureMockupWindow>
+                </Reveal>
+              </div>
+            </div>
+          </div>
+        ))}
+      </section>
+
+      {/* ── 3. App Showcase ─────────────────────────────────────────────────── */}
       <AppShowcaseSection />
 
-      {/* ── How it works ── */}
-      <section className="py-16 bg-background border-y border-border">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <h2 className="text-center text-2xl font-bold mb-10">Kom i gang på minutter</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 relative">
+      {/* ── 4. How it works (dark) ──────────────────────────────────────────── */}
+      <section className="py-24 bg-[#0c1123]">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <Reveal className="text-center mb-16">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-400 mb-3">OPPSETT</p>
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-3">Kom i gang på minutter</h2>
+            <p className="text-slate-400 max-w-xl mx-auto">Ingen IT-avdeling nødvendig. Du er oppe og kjører samme dag.</p>
+          </Reveal>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 relative">
             {[
-              { step: "1", title: "Velg bransje", desc: "Velg mellom VVS, varmepumpe eller elektro. Systemet konfigureres automatisk." },
-              { step: "2", title: "Konfigurer systemet", desc: "Aktiver modulene du trenger. Legg inn kunder og brukere med ett klikk." },
-              { step: "3", title: "Kom i gang", desc: "Systemet er klart til bruk. Første jobb kan registreres innen 5 minutter." },
+              { step: "1", title: "Velg bransje", desc: "Velg mellom VVS, varmepumpe eller elektro. Systemet konfigureres automatisk for din bransje." },
+              { step: "2", title: "Konfigurer", desc: "Aktiver modulene du trenger. Legg inn kunder og brukere med ett klikk." },
+              { step: "3", title: "Kom i gang", desc: "Første jobb kan registreres innen 5 minutter. Teknikere får mobilapp med én gang." },
             ].map((s, i) => (
-              <div key={i} className="relative flex flex-col items-center text-center">
-                <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-lg mb-4 relative z-10">
+              <Reveal key={s.step} delay={i * 120} className="relative flex flex-col items-center text-center">
+                <div className="w-14 h-14 rounded-full bg-primary flex items-center justify-center text-white font-black text-xl mb-5 shadow-lg shadow-primary/50 relative z-10">
                   {s.step}
                 </div>
                 {i < 2 && (
-                  <div className="hidden sm:block absolute top-6 left-[58%] right-0 h-px border-t-2 border-dashed border-border" />
+                  <div className="hidden sm:block absolute top-7 left-[57%] right-0 h-px border-t-2 border-dashed border-white/10" />
                 )}
-                <h3 className="font-bold mb-2">{s.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{s.desc}</p>
-              </div>
+                <h3 className="font-bold text-white mb-2 text-lg">{s.title}</h3>
+                <p className="text-sm text-slate-400 leading-relaxed">{s.desc}</p>
+              </Reveal>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── Verticals ── */}
+      {/* ── 5. Verticals ────────────────────────────────────────────────────── */}
       {(verticals?.length ?? 0) > 0 && (
-        <section className="py-20 bg-background">
+        <section className="py-24 bg-violet-50/70 border-y border-violet-100">
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold tracking-tight mb-3">Tilpasset din bransje</h2>
+            <Reveal className="text-center mb-12">
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary mb-3">BRANSJER</p>
+              <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3">Tilpasset din bransje</h2>
               <p className="text-muted-foreground max-w-xl mx-auto">
                 Systemet leveres ferdig konfigurert for din bransje med de riktige modulene og arbeidsflyten.
               </p>
-            </div>
+            </Reveal>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              {verticals?.map((v) => {
+              {verticals?.map((v, i) => {
                 const Icon = (v.icon && VERTICAL_ICONS[v.icon]) || Layers;
                 const mods = (v.default_modules ?? []).slice(0, 4);
                 return (
-                  <div
-                    key={v.id}
-                    className="rounded-2xl overflow-hidden border border-border group hover:shadow-lg transition-shadow"
-                  >
-                    <div
-                      className="p-6 relative overflow-hidden"
-                      style={{ background: v.color ? `linear-gradient(135deg, ${v.color}30, ${v.color}10)` : undefined }}
-                    >
+                  <Reveal key={v.id} delay={i * 80}>
+                    <div className="rounded-2xl overflow-hidden border border-border bg-background group hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 h-full flex flex-col">
                       <div
-                        className="w-12 h-12 rounded-xl flex items-center justify-center mb-3"
-                        style={{ backgroundColor: v.color ? v.color + "25" : undefined }}
+                        className="p-8 relative overflow-hidden flex-shrink-0"
+                        style={{ background: v.color ? `linear-gradient(135deg, ${v.color}35, ${v.color}0d)` : undefined }}
                       >
-                        <Icon className="w-6 h-6" style={{ color: v.color ?? undefined }} />
-                      </div>
-                      <h3 className="font-bold text-lg">{v.display_name}</h3>
-                      {v.description && (
-                        <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{v.description}</p>
-                      )}
-                    </div>
-                    <div className="p-5 bg-card space-y-1.5">
-                      {mods.map((m) => (
-                        <div key={m} className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                          {MODULE_LABELS[m] ?? m}
+                        <div
+                          className="w-20 h-20 rounded-2xl flex items-center justify-center mb-5 shadow-sm"
+                          style={{ background: v.color ? `linear-gradient(135deg, ${v.color}50, ${v.color}25)` : "hsl(var(--muted))" }}
+                        >
+                          <Icon className="w-10 h-10" style={{ color: v.color ?? undefined }} />
                         </div>
-                      ))}
-                      <Link
-                        to={`/bransjer/${v.slug}`}
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-primary mt-3 group-hover:gap-2 transition-all"
-                      >
-                        Les mer <ChevronRight className="w-3.5 h-3.5" />
-                      </Link>
+                        <h3 className="font-bold text-xl mb-2">{v.display_name}</h3>
+                        {v.description && (
+                          <p className="text-sm text-muted-foreground leading-relaxed">{v.description}</p>
+                        )}
+                      </div>
+                      <div className="p-6 space-y-2 flex-1 flex flex-col">
+                        <div className="space-y-2 flex-1">
+                          {mods.map((m) => (
+                            <div key={m} className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+                              {MODULE_LABELS[m] ?? m}
+                            </div>
+                          ))}
+                        </div>
+                        <Link
+                          to={`/bransjer/${v.slug}`}
+                          className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary mt-4 group-hover:gap-2.5 transition-all duration-200"
+                        >
+                          Les mer <ArrowRight className="w-3.5 h-3.5" />
+                        </Link>
+                      </div>
                     </div>
-                  </div>
+                  </Reveal>
                 );
               })}
             </div>
@@ -574,101 +649,94 @@ export default function LandingPage() {
         </section>
       )}
 
-      {/* ── Features grid ── */}
-      <section className="py-20 bg-muted/30 border-y border-border">
+      {/* ── 6. Testimonials (dark) ──────────────────────────────────────────── */}
+      <section className="py-24 bg-[#0c1123]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold tracking-tight mb-3">Alt i én løsning</h2>
-            <p className="text-muted-foreground max-w-xl mx-auto">
-              Ingen integrasjoner mellom fem ulike verktøy. Ett system som dekker hele servicehverdagen.
-            </p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {features.map((f, i) => {
-              const Icon = ICONS[f.icon] ?? CheckCircle2;
-              return (
-                <div key={i} className="bg-background rounded-xl border border-border p-6 hover:border-primary/30 transition-colors">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                    <Icon className="w-5 h-5 text-primary" />
+          <Reveal className="text-center mb-12">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-violet-400 mb-3">KUNDENE SIER</p>
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-3">Servicebedrifter elsker FieldService</h2>
+            <p className="text-slate-400">Over hele Norge bruker servicebedrifter FieldService daglig.</p>
+          </Reveal>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            {TESTIMONIALS.map((t, i) => (
+              <Reveal key={t.name} delay={i * 100}>
+                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-7 flex flex-col h-full">
+                  <div className="flex gap-0.5 mb-5">
+                    {[0,1,2,3,4].map((s) => <Star key={s} className="w-4 h-4 text-amber-400 fill-amber-400" />)}
                   </div>
-                  <h3 className="font-semibold mb-2">{f.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{f.description}</p>
+                  <p className="text-slate-300 leading-relaxed mb-6 flex-1">"{t.quote}"</p>
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+                      style={{ backgroundColor: t.color }}
+                    >
+                      {t.initials}
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-white">{t.name}</p>
+                      <p className="text-xs text-slate-500">{t.company}</p>
+                    </div>
+                    <span
+                      className="ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full"
+                      style={{ backgroundColor: t.color + "28", color: t.color }}
+                    >
+                      {t.vertical}
+                    </span>
+                  </div>
                 </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Testimonials ── */}
-      <section className="py-20 bg-background">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold tracking-tight mb-3">Hva kundene sier</h2>
-            <p className="text-muted-foreground">Servicebedrifter over hele Norge bruker FieldService daglig.</p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {TESTIMONIALS.map((t) => (
-              <div key={t.name} className="bg-card rounded-2xl border border-border p-6 flex flex-col">
-                <p className="text-sm text-muted-foreground leading-relaxed mb-5 flex-1">"{t.quote}"</p>
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
-                    style={{ backgroundColor: t.color }}
-                  >
-                    {t.initials}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold">{t.name}</p>
-                    <p className="text-xs text-muted-foreground">{t.company}</p>
-                  </div>
-                  <span
-                    className="ml-auto text-[10px] font-semibold px-2 py-0.5 rounded-full"
-                    style={{ backgroundColor: t.color + "20", color: t.color }}
-                  >
-                    {t.vertical}
-                  </span>
-                </div>
-              </div>
+              </Reveal>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── Pricing teaser ── */}
-      <section className="py-20 bg-muted/30 border-t border-border">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
-          <h2 className="text-3xl font-bold tracking-tight mb-3">Enkel og transparent prising</h2>
-          <p className="text-muted-foreground mb-10 max-w-xl mx-auto">
-            Start gratis. Velg en plan som passer bedriftens størrelse. Ingen skjulte kostnader.
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      {/* ── 7. Pricing CTA ──────────────────────────────────────────────────── */}
+      <section className="py-24 bg-background">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          <Reveal className="text-center mb-10">
+            <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary mb-3">PRISING</p>
+            <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-3">Enkel og transparent prising</h2>
+            <p className="text-muted-foreground max-w-xl mx-auto">Start gratis. Velg en plan som passer bedriftens størrelse. Ingen skjulte kostnader.</p>
+          </Reveal>
+          <Reveal delay={80} className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
             {[
-              { name: "Starter", price: "Fra 499 kr", desc: "For enkeltpersonforetak og små team" },
-              { name: "Vekst", price: "Fra 999 kr", desc: "For voksende servicebedrifter", featured: true },
+              { name: "Starter",    price: "Fra 499 kr",  desc: "For enkeltpersonforetak og små team" },
+              { name: "Vekst",      price: "Fra 999 kr",  desc: "For voksende servicebedrifter", featured: true },
               { name: "Enterprise", price: "Kontakt oss", desc: "For store organisasjoner" },
             ].map((p) => (
               <div
                 key={p.name}
-                className={`rounded-xl border p-5 text-left ${p.featured ? "border-primary bg-primary/5" : "border-border bg-background"}`}
-              >
-                {p.featured && (
-                  <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Populær</span>
+                className={cn(
+                  "rounded-xl border p-6 text-left transition-all duration-200 hover:shadow-md",
+                  p.featured
+                    ? "border-primary bg-primary/5 shadow-sm shadow-primary/10"
+                    : "border-border bg-background hover:border-primary/30"
                 )}
-                <p className="font-bold mt-1">{p.name}</p>
-                <p className="text-xl font-extrabold mt-1">{p.price}</p>
-                <p className="text-xs text-muted-foreground mt-1">{p.desc}</p>
+              >
+                {p.featured && <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Populær</span>}
+                <p className={cn("font-bold", p.featured ? "mt-1" : "mt-4")}>{p.name}</p>
+                <p className="text-2xl font-extrabold mt-1 mb-1">{p.price}</p>
+                <p className="text-xs text-muted-foreground">{p.desc}</p>
               </div>
             ))}
-          </div>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button size="lg" asChild className="gap-2 h-12 px-8 text-base">
+          </Reveal>
+          <Reveal delay={160} className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button
+              size="lg"
+              asChild
+              className="gap-2 h-12 px-8 text-base font-semibold shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all duration-200"
+            >
               <Link to="/register">Start gratis prøveperiode <ArrowRight className="w-4 h-4" /></Link>
             </Button>
-            <Button size="lg" variant="outline" asChild className="h-12 px-8 text-base">
+            <Button
+              size="lg"
+              variant="outline"
+              asChild
+              className="h-12 px-8 text-base hover:border-primary/50 hover:bg-primary/5 transition-all duration-200"
+            >
               <Link to="/priser">Se alle priser og moduler</Link>
             </Button>
-          </div>
+          </Reveal>
         </div>
       </section>
     </PublicLayout>
