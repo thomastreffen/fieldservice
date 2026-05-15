@@ -25,6 +25,7 @@ import PlansPage from "@/pages/admin/PlansPage";
 import SubscriptionsPage from "@/pages/admin/SubscriptionsPage";
 import TrialsPage from "@/pages/admin/TrialsPage";
 import VerticalsPage from "@/pages/admin/VerticalsPage";
+import VerticalEditPage from "@/pages/admin/VerticalEditPage";
 import PlatformModulesPage from "@/pages/admin/PlatformModulesPage";
 import TenantDashboardPage from "@/pages/tenant/TenantDashboardPage";
 import TenantModulesPage from "@/pages/tenant/TenantModulesPage";
@@ -174,6 +175,8 @@ function AppRoutes() {
       <Route path="/admin/subscriptions" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><SubscriptionsPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/trials" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><TrialsPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/verticals" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><VerticalsPage /></MasterAdminLayout></ProtectedRoute>} />
+      <Route path="/admin/verticals/new" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><VerticalEditPage /></MasterAdminLayout></ProtectedRoute>} />
+      <Route path="/admin/verticals/:id/edit" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><VerticalEditPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/platform-modules" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><PlatformModulesPage /></MasterAdminLayout></ProtectedRoute>} />
 
       {/* Tenant: Operative routes – open for all tenant members */}
