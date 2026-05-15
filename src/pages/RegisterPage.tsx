@@ -89,7 +89,9 @@ export default function RegisterPage() {
       if (signUpError) throw signUpError;
       if (!authData.user?.id) throw new Error("Bruker ikke opprettet");
 
-      // 2. Call SECURITY DEFINER function — no service role key needed in the browser
+      // 2. Call SECURITY DEFINER function — works for both authenticated and anon callers.
+      // p_user_id is always passed so the function works even when email confirmation
+      // is enabled and signUp() returns no session (auth.uid() would be null otherwise).
       const { data: tenantId, error: rpcError } = await (supabase as any).rpc(
         "register_trial_tenant",
         {
@@ -101,6 +103,7 @@ export default function RegisterPage() {
           p_default_modules: (selectedVertical.default_modules ?? []).filter((m) =>
             ENUM_MODULES.has(m)
           ),
+          p_user_id:         authData.user.id,
         }
       );
       if (rpcError) throw rpcError;
