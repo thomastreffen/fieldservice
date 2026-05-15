@@ -9,7 +9,7 @@ import {
   LayoutDashboard, Plug, LogOut, Flame, Puzzle, Users, Mail,
   CalendarDays, Contact, X, MoreHorizontal,
   Building2, TrendingUp, Shield, Briefcase, Cpu, FileText, ShieldAlert, ClipboardList, Inbox,
-  ArrowRightLeft, Wrench, Thermometer, Zap, Droplets, Layers,
+  ArrowRightLeft, Wrench, Thermometer, Zap, Droplets, Layers, TicketCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -98,6 +98,12 @@ const navSections: { label: string; items: NavItem[] }[] = [
       { label: "Integrasjoner", href: "/tenant/integrations", icon: Plug, adminOnly: true },
       { label: "Brukere", href: "/tenant/users", icon: Users, adminOnly: true },
       { label: "Tilgangsstyring", href: "/tenant/access-control", icon: Shield, adminOnly: true },
+    ],
+  },
+  {
+    label: "Support",
+    items: [
+      { label: "Mine saker", href: "/tenant/support", icon: TicketCheck },
     ],
   },
 ];

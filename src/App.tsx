@@ -28,6 +28,8 @@ import VerticalsPage from "@/pages/admin/VerticalsPage";
 import VerticalEditPage from "@/pages/admin/VerticalEditPage";
 import VerticalEditorPage from "@/pages/admin/VerticalEditorPage";
 import PlatformModulesPage from "@/pages/admin/PlatformModulesPage";
+import AdminSupportPage from "@/pages/admin/AdminSupportPage";
+import AdminSupportTicketPage from "@/pages/admin/AdminSupportTicketPage";
 import TenantDashboardPage from "@/pages/tenant/TenantDashboardPage";
 import TenantModulesPage from "@/pages/tenant/TenantModulesPage";
 import TenantIntegrationsPage from "@/pages/tenant/TenantIntegrationsPage";
@@ -43,6 +45,9 @@ import SalgFormPage from "@/pages/tenant/SalgFormPage";
 import CompanyDetailPage from "@/pages/tenant/CompanyDetailPage";
 import AssetDetailPage from "@/pages/tenant/AssetDetailPage";
 import JobDetailPage from "@/pages/tenant/JobDetailPage";
+import SupportPage from "@/pages/tenant/SupportPage";
+import SupportNewPage from "@/pages/tenant/SupportNewPage";
+import SupportTicketPage from "@/pages/tenant/SupportTicketPage";
 import AgreementDetailPage from "@/pages/tenant/AgreementDetailPage";
 import WarrantyDetailPage from "@/pages/tenant/WarrantyDetailPage";
 import JobsListPage from "@/pages/tenant/JobsListPage";
@@ -180,6 +185,8 @@ function AppRoutes() {
       <Route path="/admin/verticals/:id" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><VerticalEditorPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/verticals/:id/edit" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><VerticalEditorPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/platform-modules" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><PlatformModulesPage /></MasterAdminLayout></ProtectedRoute>} />
+      <Route path="/admin/support" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminSupportPage /></MasterAdminLayout></ProtectedRoute>} />
+      <Route path="/admin/support/:id" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminSupportTicketPage /></MasterAdminLayout></ProtectedRoute>} />
 
       {/* Tenant: Operative routes – open for all tenant members */}
       <Route path="/tenant" element={<TenantRoute><TenantDashboardPage /></TenantRoute>} />
@@ -226,6 +233,9 @@ function AppRoutes() {
       <Route path="/tenant/integrations" element={<TenantAdminRoute><TenantIntegrationsPage /></TenantAdminRoute>} />
       <Route path="/tenant/users" element={<TenantAdminRoute><TenantUsersPage /></TenantAdminRoute>} />
       <Route path="/tenant/access-control" element={<TenantAdminRoute><TenantAccessControlPage /></TenantAdminRoute>} />
+      <Route path="/tenant/support" element={<TenantRoute><SupportPage /></TenantRoute>} />
+      <Route path="/tenant/support/new" element={<TenantRoute><SupportNewPage /></TenantRoute>} />
+      <Route path="/tenant/support/:id" element={<TenantRoute><SupportTicketPage /></TenantRoute>} />
 
       {/* Technician mobile routes – uses TechnicianMobileLayout (no sidebar) */}
       <Route path="/technician/today" element={<TechnicianRoute><TodayPage /></TechnicianRoute>} />
