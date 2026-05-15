@@ -6,9 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { ChevronRight, Zap, Thermometer, Droplets, Layers, CheckCircle2, Loader2 } from "lucide-react";
+import { ChevronRight, Zap, Thermometer, Droplets, Layers, CheckCircle2, Loader2, MailCheck } from "lucide-react";
 import { toast } from "sonner";
 import { createInternalLead } from "@/lib/internalLeads";
+import { savePendingRegistration } from "@/lib/pendingRegistration";
 
 const VERTICAL_ICONS: Record<string, typeof Layers> = {
   zap: Zap,
@@ -49,6 +50,7 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   const { data: verticals, isLoading } = useQuery<Vertical[]>({
     queryKey: ["public_verticals"],
@@ -80,7 +82,7 @@ export default function RegisterPage() {
 
     setSubmitting(true);
     try {
-      // 1. Create auth user (also signs them in automatically)
+      // 1. Create auth user
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
@@ -89,26 +91,42 @@ export default function RegisterPage() {
       if (signUpError) throw signUpError;
       if (!authData.user?.id) throw new Error("Bruker ikke opprettet");
 
-      // 2. Call SECURITY DEFINER function — works for both authenticated and anon callers.
-      // p_user_id is always passed so the function works even when email confirmation
-      // is enabled and signUp() returns no session (auth.uid() would be null otherwise).
+      const defaultModules = (selectedVertical.default_modules ?? []).filter((m) =>
+        ENUM_MODULES.has(m)
+      );
+
+      if (!authData.session) {
+        // Email confirmation is enabled — store the registration payload so
+        // AppRoutes can complete it once a session is established after confirmation.
+        savePendingRegistration({
+          companyName: companyName.trim(),
+          slug,
+          verticalId: selectedVertical.id,
+          contactName: contactName.trim(),
+          email,
+          defaultModules,
+          verticalSlug: selectedVertical.slug,
+        });
+        setEmailSent(true);
+        setSubmitting(false);
+        return;
+      }
+
+      // 2. Session is established — call as authenticated user (auth.uid() works)
       const { data: tenantId, error: rpcError } = await (supabase as any).rpc(
         "register_trial_tenant",
         {
-          p_company_name:    companyName.trim(),
-          p_slug:            slug,
-          p_vertical_id:     selectedVertical.id,
-          p_contact_name:    contactName.trim(),
-          p_email:           email,
-          p_default_modules: (selectedVertical.default_modules ?? []).filter((m) =>
-            ENUM_MODULES.has(m)
-          ),
-          p_user_id:         authData.user.id,
+          p_company_name: companyName.trim(),
+          p_slug:         slug,
+          p_vertical_id:  selectedVertical.id,
+          p_contact_name: contactName.trim(),
+          p_email:        email,
+          p_default_modules: defaultModules,
         }
       );
       if (rpcError) throw rpcError;
 
-      // 3. Create lead in internal CRM (fire-and-forget)
+      // 3. Fire-and-forget lead in internal CRM
       createInternalLead({
         name: contactName.trim(),
         email,
@@ -118,13 +136,43 @@ export default function RegisterPage() {
         tenantId: tenantId as string,
       });
 
-      // 8. Set welcome banner flag and reload
       sessionStorage.setItem("trial_welcome", "1");
       window.location.href = "/tenant";
     } catch (err: any) {
       toast.error(err.message ?? "Registrering feilet");
       setSubmitting(false);
     }
+  }
+
+  // Email confirmation required — show a waiting screen
+  if (emailSent) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-sm text-center space-y-4">
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+            <MailCheck className="w-8 h-8 text-primary" />
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight">Sjekk e-posten din</h1>
+          <p className="text-muted-foreground text-sm leading-relaxed">
+            Vi har sendt en bekreftelseslenke til{" "}
+            <span className="font-semibold text-foreground">{email}</span>.
+            Klikk på lenken for å aktivere kontoen og starte prøveperioden.
+          </p>
+          <p className="text-xs text-muted-foreground pt-4">
+            Ikke fått e-post?{" "}
+            <button
+              className="text-primary underline underline-offset-2"
+              onClick={() => {
+                supabase.auth.resend({ type: "signup", email });
+                toast.success("Bekreftelseslenke sendt på nytt");
+              }}
+            >
+              Send på nytt
+            </button>
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (

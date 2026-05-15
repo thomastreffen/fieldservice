@@ -96,6 +96,7 @@ import TechnicianMobileLayout from "@/layouts/TechnicianMobileLayout";
 import TodayPage from "@/pages/technician/TodayPage";
 import TechJobDetailPage from "@/pages/technician/TechJobDetailPage";
 import { supabase } from "@/integrations/supabase/client";
+import { completePendingRegistration } from "@/lib/pendingRegistration";
 
 const queryClient = new QueryClient();
 
@@ -149,6 +150,15 @@ function AppRoutes() {
       .limit(1)
       .then(({ data }) => setIsTechnicianUser(!!(data?.[0])));
   }, [loading, user, tenantId, isTenantAdmin, isMasterAdmin]);
+
+  // Complete trial registration that was deferred because email confirmation was required.
+  // Runs once when a session is first established (e.g. after clicking the email link).
+  useEffect(() => {
+    if (loading || !user) return;
+    completePendingRegistration().then((completed) => {
+      if (completed) window.location.href = "/tenant";
+    });
+  }, [user?.id, loading]);
 
   if (loading) {
     return (
