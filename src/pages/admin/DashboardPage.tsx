@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import {
   Building2, Puzzle, Plug, Users, AlertTriangle, ArrowRight,
-  TrendingUp, CheckCircle2, XCircle, Clock, Activity,
+  TrendingUp, CheckCircle2, XCircle, Clock, Activity, TicketCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -56,6 +56,18 @@ export default function DashboardPage() {
     },
   });
 
+  const { data: openTicketCount = 0 } = useQuery({
+    queryKey: ["open-ticket-count"],
+    staleTime: 30_000,
+    queryFn: async () => {
+      const { count } = await (supabase as any)
+        .from("support_tickets")
+        .select("id", { count: "exact", head: true })
+        .in("status", ["Åpen", "Under behandling"]);
+      return count ?? 0;
+    },
+  });
+
   const activeTenants = tenants?.filter((t) => t.status === "active").length ?? 0;
   const trialTenants = tenants?.filter((t) => t.status === "trial").length ?? 0;
   const suspendedTenants = tenants?.filter((t) => t.status === "suspended").length ?? 0;
@@ -66,6 +78,10 @@ export default function DashboardPage() {
 
   // Build alerts
   const alerts: { level: "critical" | "warning" | "info"; text: string; link?: string }[] = [];
+
+  if (openTicketCount > 0) {
+    alerts.push({ level: "info", text: `${openTicketCount} åpen(e) support-ticket(er) venter på svar`, link: "/admin/support?status=open" });
+  }
 
   if (errorIntegrations > 0) {
     alerts.push({ level: "critical", text: `${errorIntegrations} integrasjon(er) med feil`, link: "/admin/integrations" });
@@ -134,10 +150,10 @@ export default function DashboardPage() {
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Aktive tenants", value: activeTenants, sub: `${trialTenants} på prøve`, icon: Building2, color: "text-primary" },
-          { label: "Totalt brukere", value: totalUsers, sub: `${tenants?.length ?? 0} tenants`, icon: Users, color: "text-blue-600 dark:text-blue-400" },
-          { label: "Aktive moduler", value: activeModuleCount, sub: `${Object.keys(moduleUsage).length} unike`, icon: Puzzle, color: "text-violet-600 dark:text-violet-400" },
-          { label: "Integrasjoner", value: connectedIntegrations, sub: errorIntegrations > 0 ? `${errorIntegrations} feil` : "OK", icon: Plug, color: errorIntegrations > 0 ? "text-destructive" : "text-accent" },
+          { label: "Aktive tenants", value: activeTenants, sub: `${trialTenants} på prøve`, icon: Building2, color: "text-primary", href: undefined },
+          { label: "Totalt brukere", value: totalUsers, sub: `${tenants?.length ?? 0} tenants`, icon: Users, color: "text-blue-600 dark:text-blue-400", href: undefined },
+          { label: "Aktive moduler", value: activeModuleCount, sub: `${Object.keys(moduleUsage).length} unike`, icon: Puzzle, color: "text-violet-600 dark:text-violet-400", href: undefined },
+          { label: "Integrasjoner", value: connectedIntegrations, sub: errorIntegrations > 0 ? `${errorIntegrations} feil` : "OK", icon: Plug, color: errorIntegrations > 0 ? "text-destructive" : "text-accent", href: undefined },
         ].map((s) => (
           <Card key={s.label} className="border-border/50">
             <CardContent className="p-4">
@@ -155,6 +171,26 @@ export default function DashboardPage() {
           </Card>
         ))}
       </div>
+
+      {/* Support ticket notification */}
+      {openTicketCount > 0 && (
+        <Link to="/admin/support" className="block">
+          <div className="flex items-center justify-between p-4 rounded-xl border border-blue-200 bg-blue-50 dark:border-blue-800/40 dark:bg-blue-950/20 hover:bg-blue-100 dark:hover:bg-blue-950/30 transition-colors">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/40">
+                <TicketCheck className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-blue-900 dark:text-blue-200">
+                  {openTicketCount} åpen{openTicketCount !== 1 ? "e" : ""} support-ticket{openTicketCount !== 1 ? "er" : ""}
+                </p>
+                <p className="text-xs text-blue-600 dark:text-blue-400">Klikk for å se alle åpne saker</p>
+              </div>
+            </div>
+            <ArrowRight className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+          </div>
+        </Link>
+      )}
 
       {/* Alerts */}
       {alerts.length > 0 && (

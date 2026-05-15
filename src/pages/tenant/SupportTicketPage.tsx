@@ -6,8 +6,42 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Loader2, Send } from "lucide-react";
+import { ArrowLeft, Loader2, Send, Paperclip, X, FileText, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const ACCEPTED_TYPES = "image/jpeg,image/png,image/gif,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/plain";
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
+function isImage(mime: string | null | undefined) {
+  return mime?.startsWith("image/") ?? false;
+}
+
+function AttachmentDisplay({ path, name, mime }: { path: string; name: string | null; mime: string | null }) {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useState(() => {
+    supabase.storage.from("ticket-attachments").createSignedUrl(path, 3600).then(({ data }) => {
+      if (data?.signedUrl) setUrl(data.signedUrl);
+    });
+  });
+
+  if (!url) return null;
+
+  if (isImage(mime)) {
+    return (
+      <a href={url} target="_blank" rel="noreferrer" className="mt-3 block">
+        <img src={url} alt={name ?? "vedlegg"} className="max-h-64 rounded-lg border border-border object-contain" />
+      </a>
+    );
+  }
+
+  return (
+    <a href={url} target="_blank" rel="noreferrer" className="mt-3 flex items-center gap-2 text-xs text-primary hover:underline">
+      <Download className="h-3.5 w-3.5 shrink-0" />
+      {name ?? "Last ned vedlegg"}
+    </a>
+  );
+}
 
 interface Ticket {
   id: string;
@@ -26,6 +60,10 @@ interface Message {
   message: string;
   is_internal: boolean;
   created_at: string;
+  attachment_path: string | null;
+  attachment_name: string | null;
+  attachment_mime: string | null;
+  attachment_size: number | null;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -52,7 +90,9 @@ export default function SupportTicketPage() {
   const [reply, setReply] = useState("");
   const [sending, setSending] = useState(false);
   const [closing, setClosing] = useState(false);
+  const [attachment, setAttachment] = useState<File | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchData = useCallback(async () => {
     if (!tenantId || !id) return;
@@ -66,7 +106,7 @@ export default function SupportTicketPage() {
         .single(),
       (supabase as any)
         .from("support_messages")
-        .select("id, sender_id, message, is_internal, created_at")
+        .select("id, sender_id, message, is_internal, created_at, attachment_path, attachment_name, attachment_mime, attachment_size")
         .eq("ticket_id", id)
         .order("created_at", { ascending: true }),
     ]);
@@ -82,14 +122,40 @@ export default function SupportTicketPage() {
   }, [messages]);
 
   async function sendReply() {
-    if (!reply.trim() || !user || !id) return;
+    if (!reply.trim() && !attachment || !user || !id) return;
     setSending(true);
+    let attachmentPath: string | null = null;
+    let attachmentName: string | null = null;
+    let attachmentMime: string | null = null;
+    let attachmentSize: number | null = null;
+    if (attachment) {
+      const ext = attachment.name.split(".").pop();
+      const path = `${tenantId}/${id}/${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("ticket-attachments")
+        .upload(path, attachment);
+      if (uploadError) { setSending(false); toast.error("Kunne ikke laste opp vedlegg"); return; }
+      attachmentPath = path;
+      attachmentName = attachment.name;
+      attachmentMime = attachment.type;
+      attachmentSize = attachment.size;
+    }
     const { error } = await (supabase as any)
       .from("support_messages")
-      .insert({ ticket_id: id, sender_id: user.id, message: reply.trim(), is_internal: false });
+      .insert({
+        ticket_id: id,
+        sender_id: user.id,
+        message: reply.trim(),
+        is_internal: false,
+        attachment_path: attachmentPath,
+        attachment_name: attachmentName,
+        attachment_mime: attachmentMime,
+        attachment_size: attachmentSize,
+      });
     setSending(false);
     if (error) { toast.error("Kunne ikke sende melding"); return; }
     setReply("");
+    setAttachment(null);
     fetchData();
   }
 
@@ -176,7 +242,10 @@ export default function SupportTicketPage() {
                     <p className="text-[11px] text-muted-foreground">{formatTime(msg.created_at)}</p>
                   </div>
                 </div>
-                <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
+                {msg.message && <p className="text-sm whitespace-pre-wrap">{msg.message}</p>}
+                {msg.attachment_path && (
+                  <AttachmentDisplay path={msg.attachment_path} name={msg.attachment_name} mime={msg.attachment_mime} />
+                )}
               </div>
             );
           })}
@@ -198,9 +267,40 @@ export default function SupportTicketPage() {
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) sendReply();
             }}
           />
+          {attachment && (
+            <div className="flex items-center gap-2 text-xs bg-muted/50 px-3 py-2 rounded-lg">
+              <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <span className="truncate flex-1">{attachment.name}</span>
+              <button onClick={() => setAttachment(null)} className="text-muted-foreground hover:text-foreground">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
           <div className="flex items-center justify-between">
-            <p className="text-[11px] text-muted-foreground">Ctrl+Enter for å sende</p>
-            <Button onClick={sendReply} disabled={sending || !reply.trim()} className="gap-2">
+            <div className="flex items-center gap-3">
+              <p className="text-[11px] text-muted-foreground">Ctrl+Enter for å sende</p>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Paperclip className="h-3.5 w-3.5" />
+                Vedlegg
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={ACCEPTED_TYPES}
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (!f) return;
+                  if (f.size > MAX_FILE_SIZE) { toast.error("Maks filstørrelse er 10MB"); return; }
+                  setAttachment(f);
+                  e.target.value = "";
+                }}
+              />
+            </div>
+            <Button onClick={sendReply} disabled={sending || (!reply.trim() && !attachment)} className="gap-2">
               {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
               Send
             </Button>
