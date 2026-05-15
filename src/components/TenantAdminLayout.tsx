@@ -1,4 +1,4 @@
-import { ReactNode, useMemo, useState } from "react";
+import { ReactNode, useMemo, useState, CSSProperties } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useTenantModules } from "@/hooks/useTenantModules";
@@ -9,7 +9,7 @@ import {
   LayoutDashboard, Plug, LogOut, Flame, Puzzle, Users, Mail,
   CalendarDays, Contact, X, MoreHorizontal,
   Building2, TrendingUp, Shield, Briefcase, Cpu, FileText, ShieldAlert, ClipboardList, Inbox,
-  ArrowRightLeft, Wrench,
+  ArrowRightLeft, Wrench, Thermometer, Zap, Droplets, Layers,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -17,6 +17,41 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import NotificationCenter from "@/components/notifications/NotificationCenter";
 import GlobalSearch from "@/components/search/GlobalSearch";
+
+const VERTICAL_ICONS: Record<string, typeof Flame> = {
+  thermometer: Thermometer,
+  zap: Zap,
+  droplets: Droplets,
+};
+
+function verticalCssVars(hex: string | null | undefined): CSSProperties {
+  if (!hex || !hex.startsWith("#")) return {};
+  const r = parseInt(hex.slice(1, 3), 16) / 255;
+  const g = parseInt(hex.slice(3, 5), 16) / 255;
+  const b = parseInt(hex.slice(5, 7), 16) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  const l = (max + min) / 2;
+  let h = 0, s = 0;
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+      case g: h = ((b - r) / d + 2) / 6; break;
+      case b: h = ((r - g) / d + 4) / 6; break;
+    }
+  }
+  const hd = Math.round(h * 360);
+  const sp = Math.round(s * 100);
+  const lp = Math.round(l * 100);
+  return {
+    ["--primary" as string]: `${hd} ${sp}% ${lp}%`,
+    ["--primary-foreground" as string]: "0 0% 100%",
+    ["--sidebar-accent" as string]: `${hd} ${sp}% 95%`,
+    ["--sidebar-accent-foreground" as string]: `${hd} ${sp}% 35%`,
+    ["--ring" as string]: `${hd} ${sp}% ${lp}%`,
+  };
+}
 
 interface NavItem {
   label: string;
@@ -148,14 +183,15 @@ function SidebarNav({
   );
 }
 
-function TopBar({ user, signOut, isMobile, isMasterAdmin }: { user: any; signOut: () => void; isMobile: boolean; isMasterAdmin: boolean }) {
+function TopBar({ user, signOut, isMobile, isMasterAdmin, vertical }: { user: any; signOut: () => void; isMobile: boolean; isMasterAdmin: boolean; vertical: { display_name: string; icon: string | null; color: string | null } | null }) {
+  const VerticalIcon = (vertical?.icon && VERTICAL_ICONS[vertical.icon]) || Layers;
   return (
     <header className="h-14 border-b border-border bg-card flex items-center justify-between px-4 gap-4 shrink-0">
       <div className="flex items-center gap-3">
         {isMobile ? (
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-              <Flame className="w-3.5 h-3.5 text-primary-foreground" />
+              <VerticalIcon className="w-3.5 h-3.5 text-primary-foreground" />
             </div>
             <span className="text-sm font-semibold">VPKontroll</span>
           </div>
@@ -270,11 +306,13 @@ export default function TenantAdminLayout({ children }: { children: ReactNode })
   const [moreOpen, setMoreOpen] = useState(false);
 
   const isAdmin = isMasterAdmin || isTenantAdmin;
+  const cssVars = useMemo(() => verticalCssVars(vertical?.color), [vertical?.color]);
+  const VerticalIcon = (vertical?.icon && VERTICAL_ICONS[vertical.icon]) || Layers;
 
   if (isMobile) {
     return (
-      <div className="min-h-screen flex flex-col bg-background">
-        <TopBar user={user} signOut={signOut} isMobile isMasterAdmin={isMasterAdmin} />
+      <div style={cssVars} className="min-h-screen flex flex-col bg-background">
+        <TopBar user={user} signOut={signOut} isMobile isMasterAdmin={isMasterAdmin} vertical={vertical} />
 
         <main
           className="flex-1 overflow-auto"
@@ -316,11 +354,11 @@ export default function TenantAdminLayout({ children }: { children: ReactNode })
   }
 
   return (
-    <div className="min-h-screen flex bg-background">
+    <div style={cssVars} className="min-h-screen flex bg-background">
       <aside className="w-60 bg-card border-r border-border flex flex-col shrink-0">
         <div className="p-4 flex items-center gap-3 border-b border-border">
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-            <Flame className="w-4 h-4 text-primary-foreground" />
+            <VerticalIcon className="w-4 h-4 text-primary-foreground" />
           </div>
           <div className="flex flex-col min-w-0">
             <span className="text-sm font-semibold">VPKontroll</span>
@@ -333,7 +371,7 @@ export default function TenantAdminLayout({ children }: { children: ReactNode })
         <RoleSwitchLink />
       </aside>
       <div className="flex-1 flex flex-col min-w-0">
-        <TopBar user={user} signOut={signOut} isMobile={false} isMasterAdmin={isMasterAdmin} />
+        <TopBar user={user} signOut={signOut} isMobile={false} isMasterAdmin={isMasterAdmin} vertical={vertical} />
         <main className="flex-1 overflow-auto">
           <div className="p-6 lg:p-8 max-w-[1400px] mx-auto">{children}</div>
         </main>
