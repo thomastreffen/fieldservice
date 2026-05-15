@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import PublicLayout from "@/layouts/PublicLayout";
+import { SeoHead } from "@/components/SeoHead";
 import {
   ArrowRight, Zap, Users, Calendar, Shield, Briefcase, Mail,
   Thermometer, Droplets, Layers, CheckCircle2, ChevronRight,
@@ -450,6 +451,11 @@ export default function LandingPage() {
 
   return (
     <PublicLayout>
+      <SeoHead
+        title="FieldService – Alt du trenger for feltservice"
+        description="Moderne field service system for varmepumpe, elektro og VVS-bedrifter. Start gratis prøveperiode i dag."
+        canonicalPath="/"
+      />
       {/* ── Hero ── */}
       <section className="relative overflow-hidden bg-gradient-to-b from-muted/50 via-muted/20 to-background pt-16 pb-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 grid lg:grid-cols-2 gap-12 items-center">

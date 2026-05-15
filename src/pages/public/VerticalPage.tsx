@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import PublicLayout from "@/layouts/PublicLayout";
+import { SeoHead } from "@/components/SeoHead";
 import {
   ArrowRight, Zap, Thermometer, Droplets, Layers,
   CheckCircle2, Briefcase, Users, Calendar, Shield, FileText, ShieldAlert,
@@ -97,6 +98,14 @@ export default function VerticalPage() {
   const highlights = slug ? (VERTICAL_HIGHLIGHTS[slug] ?? []) : [];
   const testimonial = slug ? TESTIMONIALS[slug] : null;
 
+  const SEO_TITLES: Record<string, string> = {
+    elektro: "Elektro – FieldService | Jobbstyring for elektriker",
+    vvs: "VVS – FieldService | System for rørleggerbedrifter",
+    varmepumpe: "Varmepumpe – FieldService | Field service system",
+  };
+  const seoTitle = slug ? (SEO_TITLES[slug] ?? `${vertical?.display_name ?? slug} – FieldService`) : "Bransjer – FieldService";
+  const seoDesc = vertical?.description ?? `FieldService tilpasset for ${vertical?.display_name ?? slug}-bransjen. Jobbstyring, CRM og ressursplanlegger.`;
+
   if (isLoading) {
     return (
       <PublicLayout>
@@ -121,6 +130,11 @@ export default function VerticalPage() {
 
   return (
     <PublicLayout>
+      <SeoHead
+        title={seoTitle}
+        description={seoDesc}
+        canonicalPath={`/bransjer/${slug}`}
+      />
       {/* Hero with brand color gradient */}
       <section
         className="pt-16 pb-20 relative overflow-hidden"

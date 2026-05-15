@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import PublicLayout from "@/layouts/PublicLayout";
+import { SeoHead } from "@/components/SeoHead";
 import {
   Clock, TrendingUp, ArrowRight, CheckCircle2,
   Briefcase, Users, Calendar, FileText, BarChart3,
@@ -212,6 +213,11 @@ function RoiCalculator() {
 export default function VerdiskapingPage() {
   return (
     <PublicLayout>
+      <SeoHead
+        title="Hvorfor FieldService – Spar tid, øk inntekt, reduser kostnader"
+        description="Se konkrete tall på hva FieldService betyr for din servicebedrift. Beregn din ROI med vår kalkulator."
+        canonicalPath="/verdiskaping"
+      />
       {/* ── Hero ── */}
       <section className="bg-gradient-to-b from-muted/40 to-background pt-16 pb-14 text-center">
         <div className="max-w-3xl mx-auto px-4 sm:px-6">

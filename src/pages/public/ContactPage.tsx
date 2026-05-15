@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import PublicLayout from "@/layouts/PublicLayout";
+import { SeoHead } from "@/components/SeoHead";
 import { CheckCircle2, Loader2, Mail, Phone, Clock } from "lucide-react";
 import { createInternalLead } from "@/lib/internalLeads";
 
@@ -56,6 +57,11 @@ export default function ContactPage() {
 
   return (
     <PublicLayout>
+      <SeoHead
+        title="Kontakt oss – FieldService"
+        description="Ta kontakt med FieldService. Vi svarer innen én arbeidsdag."
+        canonicalPath="/kontakt"
+      />
       <section className="bg-gradient-to-b from-muted/40 to-background pt-16 pb-8 text-center">
         <div className="max-w-2xl mx-auto px-4 sm:px-6">
           <h1 className="text-4xl font-extrabold tracking-tight mb-3">Ta kontakt</h1>

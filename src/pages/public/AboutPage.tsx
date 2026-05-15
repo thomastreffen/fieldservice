@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import PublicLayout from "@/layouts/PublicLayout";
+import { SeoHead } from "@/components/SeoHead";
 import { ArrowRight, Heart, Shield, Zap } from "lucide-react";
 
 export default function AboutPage() {
@@ -22,6 +23,11 @@ export default function AboutPage() {
 
   return (
     <PublicLayout>
+      <SeoHead
+        title="Om oss – FieldService"
+        description="Lær mer om FieldService og teamet bak systemet for norske servicebedrifter."
+        canonicalPath="/om-oss"
+      />
       <section className="bg-gradient-to-b from-muted/40 to-background pt-16 pb-20">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
           <h1 className="text-4xl font-extrabold tracking-tight mb-4">Om FieldService</h1>

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import PublicLayout from "@/layouts/PublicLayout";
+import { SeoHead } from "@/components/SeoHead";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ArrowRight, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -98,6 +99,11 @@ export default function FaqPage() {
 
   return (
     <PublicLayout>
+      <SeoHead
+        title="Vanlige spørsmål – FieldService"
+        description="Svar på de vanligste spørsmålene om FieldService – priser, sikkerhet, moduler, support og mer."
+        canonicalPath="/faq"
+      />
       {/* Header */}
       <section className="bg-gradient-to-b from-muted/40 to-background pt-16 pb-8 text-center">
         <div className="max-w-2xl mx-auto px-4 sm:px-6">

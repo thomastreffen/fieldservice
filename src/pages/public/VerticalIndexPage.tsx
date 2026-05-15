@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import PublicLayout from "@/layouts/PublicLayout";
+import { SeoHead } from "@/components/SeoHead";
 import { Zap, Thermometer, Droplets, Layers, ArrowRight } from "lucide-react";
 import { LucideIcon } from "lucide-react";
 
@@ -31,6 +32,11 @@ export default function VerticalIndexPage() {
 
   return (
     <PublicLayout>
+      <SeoHead
+        title="Bransjer – FieldService"
+        description="FieldService er tilpasset for varmepumpe, VVS og elektrobransjen. Velg din bransje og se hva systemet gjør for deg."
+        canonicalPath="/bransjer"
+      />
       <section className="bg-gradient-to-b from-muted/40 to-background pt-16 pb-12 text-center">
         <div className="max-w-3xl mx-auto px-4 sm:px-6">
           <h1 className="text-4xl font-extrabold tracking-tight mb-4">Velg din bransje</h1>

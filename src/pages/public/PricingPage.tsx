@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import PublicLayout from "@/layouts/PublicLayout";
+import { SeoHead } from "@/components/SeoHead";
 import { CheckCircle2, ArrowRight, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -104,6 +105,11 @@ export default function PricingPage() {
 
   return (
     <PublicLayout>
+      <SeoHead
+        title="Priser – FieldService"
+        description="Enkle og transparente priser. Start gratis i 14 dager, ingen kredittkort."
+        canonicalPath="/priser"
+      />
       {/* Header */}
       <section className="bg-gradient-to-b from-muted/40 to-background pt-16 pb-12 text-center">
         <div className="max-w-3xl mx-auto px-4 sm:px-6">
