@@ -30,13 +30,14 @@ type Tenant = Tables<"tenants">;
 type TenantStatus = Tenant["status"];
 
 const statusLabels: Record<TenantStatus, string> = {
-  trial: "Prøveperiode", active: "Aktiv", inactive: "Inaktiv", suspended: "Suspendert",
+  trial: "Prøveperiode", active: "Aktiv", inactive: "Inaktiv", suspended: "Suspendert", internal: "Intern",
 };
 const statusColors: Record<string, string> = {
   active: "bg-accent/10 text-accent border-accent/20",
   trial: "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400",
   inactive: "bg-muted text-muted-foreground",
   suspended: "bg-destructive/10 text-destructive border-destructive/20",
+  internal: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400",
 };
 
 const ALL_MODULES = ["postkontoret", "ressursplanlegger", "crm"] as const;
