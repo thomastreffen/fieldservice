@@ -5,6 +5,7 @@ import { Menu, X, Layers, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
+  { label: "Hvorfor FieldService", href: "/verdiskaping" },
   { label: "Priser", href: "/priser" },
   { label: "Bransjer", href: "/bransjer" },
   { label: "FAQ", href: "/faq" },

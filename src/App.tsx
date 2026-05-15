@@ -24,6 +24,7 @@ import VerticalIndexPage from "@/pages/public/VerticalIndexPage";
 import AboutPage from "@/pages/public/AboutPage";
 import ContactPage from "@/pages/public/ContactPage";
 import FaqPage from "@/pages/public/FaqPage";
+import VerdiskapingPage from "@/pages/public/VerdiskapingPage";
 import AdminCmsPage from "@/pages/admin/AdminCmsPage";
 import DashboardPage from "@/pages/admin/DashboardPage";
 import TenantsPage from "@/pages/admin/TenantsPage";
@@ -186,6 +187,7 @@ function AppRoutes() {
       <Route path="/bransjer/:slug" element={<VerticalPage />} />
       <Route path="/om-oss" element={<AboutPage />} />
       <Route path="/faq" element={<FaqPage />} />
+      <Route path="/verdiskaping" element={<VerdiskapingPage />} />
       <Route path="/kontakt" element={<ContactPage />} />
 
       <Route path="/login" element={user ? <Navigate to={getHomeRedirect()} replace /> : <LoginPage />} />
