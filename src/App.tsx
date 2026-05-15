@@ -53,6 +53,7 @@ import PostkontoretPage from "@/pages/tenant/PostkontoretPage";
 import RessursplanleggerPage from "@/pages/tenant/RessursplanleggerPage";
 import TenantAccessControlPage from "@/pages/tenant/AccessControlPage";
 import CrmContactsPage from "@/pages/tenant/CrmContactsPage";
+import CrmPipelinePage from "@/pages/tenant/CrmPipelinePage";
 import CrmCompaniesPage from "@/pages/tenant/CrmCompaniesPage";
 import CompanyFormPage from "@/pages/tenant/CompanyFormPage";
 import CrmDealsPage from "@/pages/tenant/CrmDealsPage";
@@ -227,6 +228,7 @@ function AppRoutes() {
       <Route path="/tenant/mine-oppdrag" element={<TenantRoute><TechnicianDashboardPage /></TenantRoute>} />
 
       {/* CRM routes – open for tenant members with module + permission checks */}
+      <Route path="/tenant/crm/pipeline" element={<TenantRoute module="crm" permission="module.crm"><CrmPipelinePage /></TenantRoute>} />
       <Route path="/tenant/crm/contacts" element={<TenantRoute module="crm" permission="module.crm"><CrmContactsPage /></TenantRoute>} />
       <Route path="/tenant/crm/companies" element={<TenantRoute module="crm" permission="module.crm"><CrmCompaniesPage /></TenantRoute>} />
       <Route path="/tenant/crm/deals" element={<TenantRoute module="crm" permission="module.crm"><CrmDealsPage /></TenantRoute>} />

@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import PublicLayout from "@/layouts/PublicLayout";
 import { CheckCircle2, Loader2, Mail, Phone, Clock } from "lucide-react";
+import { createInternalLead } from "@/lib/internalLeads";
 
 export default function ContactPage() {
   const [name, setName] = useState("");
@@ -36,6 +37,15 @@ export default function ContactPage() {
           created_by: null,
         });
       if (dbError) throw dbError;
+
+      // Fire-and-forget: create CRM lead in internal tenant
+      createInternalLead({
+        name: name.trim(),
+        email: email.trim(),
+        source: "kontaktskjema",
+        notes: message.trim(),
+      });
+
       setSent(true);
     } catch (err: any) {
       setError(err.message ?? "Noe gikk galt. Prøv igjen.");

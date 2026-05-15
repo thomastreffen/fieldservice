@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { ChevronRight, Zap, Thermometer, Droplets, Layers, CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { createInternalLead } from "@/lib/internalLeads";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const SERVICE_ROLE_KEY = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY as string;
@@ -146,7 +147,16 @@ export default function RegisterPage() {
         );
       }
 
-      // 7. Set welcome banner flag and reload
+      // 7. Create lead in internal CRM (fire-and-forget)
+      createInternalLead({
+        name: contactName.trim(),
+        email,
+        company: companyName.trim(),
+        source: "trial",
+        verticalSlug: selectedVertical.slug,
+      });
+
+      // 8. Set welcome banner flag and reload
       sessionStorage.setItem("trial_welcome", "1");
       window.location.href = "/tenant";
     } catch (err: any) {
