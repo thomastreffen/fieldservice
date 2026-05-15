@@ -1,0 +1,1 @@
+ALTER TABLE saas_plans ADD COLUMN IF NOT EXISTS price_config JSONB;
