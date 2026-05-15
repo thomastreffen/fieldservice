@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { createClient } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,9 +9,6 @@ import { cn } from "@/lib/utils";
 import { ChevronRight, Zap, Thermometer, Droplets, Layers, CheckCircle2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { createInternalLead } from "@/lib/internalLeads";
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SERVICE_ROLE_KEY = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY as string;
 
 const VERTICAL_ICONS: Record<string, typeof Layers> = {
   zap: Zap,
@@ -84,76 +80,39 @@ export default function RegisterPage() {
 
     setSubmitting(true);
     try {
-      // 1. Create auth user
+      // 1. Create auth user (also signs them in automatically)
       const { data: authData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: { data: { full_name: contactName } },
       });
       if (signUpError) throw signUpError;
-      const userId = authData.user?.id;
-      if (!userId) throw new Error("Bruker ikke opprettet");
+      if (!authData.user?.id) throw new Error("Bruker ikke opprettet");
 
-      // 2. Use service role client for privileged inserts
-      const svc = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
-        auth: { persistSession: false, autoRefreshToken: false },
-      });
-
-      // 3. Create tenant
-      const trialEndsAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
-      const { data: tenant, error: tenantError } = await svc
-        .from("tenants")
-        .insert({
-          name: companyName.trim(),
-          slug,
-          status: "trial",
-          trial_ends_at: trialEndsAt,
-          vertical_id: selectedVertical.id,
-        })
-        .select("id")
-        .single();
-      if (tenantError) throw tenantError;
-      const tenantId = tenant.id;
-
-      // 4. Create profile
-      const { error: profileError } = await svc.from("profiles").insert({
-        user_id: userId,
-        tenant_id: tenantId,
-        full_name: contactName.trim(),
-        email,
-        is_active: true,
-      });
-      if (profileError) throw profileError;
-
-      // 5. Assign tenant_admin role
-      const { error: roleError } = await svc.from("user_roles").insert({
-        user_id: userId,
-        role: "tenant_admin",
-      });
-      if (roleError) throw roleError;
-
-      // 6. Activate default modules (filtered to enum values)
-      const defaultMods = (selectedVertical.default_modules ?? []).filter((m) =>
-        ENUM_MODULES.has(m)
+      // 2. Call SECURITY DEFINER function — no service role key needed in the browser
+      const { data: tenantId, error: rpcError } = await (supabase as any).rpc(
+        "register_trial_tenant",
+        {
+          p_company_name:    companyName.trim(),
+          p_slug:            slug,
+          p_vertical_id:     selectedVertical.id,
+          p_contact_name:    contactName.trim(),
+          p_email:           email,
+          p_default_modules: (selectedVertical.default_modules ?? []).filter((m) =>
+            ENUM_MODULES.has(m)
+          ),
+        }
       );
-      if (defaultMods.length > 0) {
-        await svc.from("tenant_modules").insert(
-          defaultMods.map((mod) => ({
-            tenant_id: tenantId,
-            module_name: mod,
-            is_active: true,
-            activated_at: new Date().toISOString(),
-          }))
-        );
-      }
+      if (rpcError) throw rpcError;
 
-      // 7. Create lead in internal CRM (fire-and-forget)
+      // 3. Create lead in internal CRM (fire-and-forget)
       createInternalLead({
         name: contactName.trim(),
         email,
         company: companyName.trim(),
         source: "trial",
         verticalSlug: selectedVertical.slug,
+        tenantId: tenantId as string,
       });
 
       // 8. Set welcome banner flag and reload
