@@ -114,6 +114,15 @@ const navSections: { label: string; items: NavItem[] }[] = [
 // Items shown directly in the mobile bottom nav — excluded from the "Mer" sheet
 const BOTTOM_NAV_HREFS = new Set(["/tenant", "/tenant/crm/companies", "/tenant/crm/jobs", "/tenant/ressursplanlegger"]);
 
+// Whitelist for internal (platform-owned) tenants — only CRM nav items
+const INTERNAL_ONLY_HREFS = new Set([
+  "/tenant",
+  "/tenant/crm/pipeline",
+  "/tenant/crm/contacts",
+  "/tenant/crm/companies",
+  "/tenant/crm/deals",
+]);
+
 function TrialBanner({ tenantId }: { tenantId: string }) {
   const SESSION_KEY = "trial_banner_dismissed";
   const [dismissed, setDismissed] = useState(() => sessionStorage.getItem(SESSION_KEY) === "1");
@@ -187,6 +196,7 @@ function SidebarNav({
   hasVerticalModule,
   isAdmin,
   excludeHrefs,
+  onlyHrefs,
 }: {
   location: ReturnType<typeof useLocation>;
   onNavigate?: () => void;
@@ -196,6 +206,7 @@ function SidebarNav({
   hasVerticalModule: (m: string) => boolean;
   isAdmin: boolean;
   excludeHrefs?: Set<string>;
+  onlyHrefs?: Set<string>;
 }) {
   const visibleSections = useMemo(
     () =>
@@ -203,6 +214,7 @@ function SidebarNav({
         .map((section) => ({
           ...section,
           items: section.items.filter((item) => {
+            if (onlyHrefs && !onlyHrefs.has(item.href)) return false;
             if (excludeHrefs?.has(item.href)) return false;
             if (item.adminOnly && !isAdmin) return false;
             if (item.module && !hasModule(item.module)) return false;
@@ -212,7 +224,7 @@ function SidebarNav({
           }),
         }))
         .filter((section) => section.items.length > 0),
-    [hasModule, hasPermission, hasVerticalModule, isAdmin, excludeHrefs]
+    [hasModule, hasPermission, hasVerticalModule, isAdmin, excludeHrefs, onlyHrefs]
   );
 
   return (
@@ -382,6 +394,23 @@ export default function TenantAdminLayout({ children }: { children: ReactNode })
   const cssVars = useMemo(() => verticalCssVars(vertical?.color), [vertical?.color]);
   const VerticalIcon = (vertical?.icon && VERTICAL_ICONS[vertical.icon]) || Layers;
 
+  // Reuses the same query key as TrialBanner so the fetch is shared/cached
+  const { data: tenantMeta } = useQuery({
+    queryKey: ["tenant_trial_status", tenantId],
+    enabled: !!tenantId,
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("tenants")
+        .select("status, trial_ends_at")
+        .eq("id", tenantId)
+        .single();
+      return data as { status: string; trial_ends_at: string | null } | null;
+    },
+  });
+
+  const onlyHrefs = tenantMeta?.status === "internal" ? INTERNAL_ONLY_HREFS : undefined;
+
   if (isMobile) {
     return (
       <div style={cssVars} className="min-h-screen flex flex-col bg-background">
@@ -418,6 +447,7 @@ export default function TenantAdminLayout({ children }: { children: ReactNode })
                 hasVerticalModule={hasVerticalModule}
                 isAdmin={isAdmin}
                 excludeHrefs={BOTTOM_NAV_HREFS}
+                onlyHrefs={onlyHrefs}
               />
               <RoleSwitchLink />
             </div>
@@ -441,7 +471,7 @@ export default function TenantAdminLayout({ children }: { children: ReactNode })
             )}
           </div>
         </div>
-        <SidebarNav location={location} hasModule={hasModule} hasPermission={hasPermission} hasVerticalModule={hasVerticalModule} isAdmin={isAdmin} />
+        <SidebarNav location={location} hasModule={hasModule} hasPermission={hasPermission} hasVerticalModule={hasVerticalModule} isAdmin={isAdmin} onlyHrefs={onlyHrefs} />
         <RoleSwitchLink />
       </aside>
       <div className="flex-1 flex flex-col min-w-0">
