@@ -32,6 +32,7 @@ import AdminSupportPage from "@/pages/admin/AdminSupportPage";
 import AdminSupportTicketPage from "@/pages/admin/AdminSupportTicketPage";
 import AdminSettingsIntegrationsPage from "@/pages/admin/AdminSettingsIntegrationsPage";
 import AdminSettingsTeamPage from "@/pages/admin/AdminSettingsTeamPage";
+import AdminPlanFormPage from "@/pages/admin/AdminPlanFormPage";
 import AdminProjectsPage from "@/pages/admin/AdminProjectsPage";
 import AdminProjectNewPage from "@/pages/admin/AdminProjectNewPage";
 import AdminProjectTaskPage from "@/pages/admin/AdminProjectTaskPage";
@@ -183,6 +184,8 @@ function AppRoutes() {
       <Route path="/admin/integrations" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><IntegrationsPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/access-control" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminAccessControlPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/plans" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><PlansPage /></MasterAdminLayout></ProtectedRoute>} />
+      <Route path="/admin/plans/new" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminPlanFormPage /></MasterAdminLayout></ProtectedRoute>} />
+      <Route path="/admin/plans/:id" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminPlanFormPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/subscriptions" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><SubscriptionsPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/trials" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><TrialsPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/verticals" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><VerticalsPage /></MasterAdminLayout></ProtectedRoute>} />
