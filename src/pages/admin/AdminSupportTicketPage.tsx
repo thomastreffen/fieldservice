@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
+import { useAdminUsers } from "@/hooks/useAdminUsers";
 import { sendTeamsMessage, statusChangeCard, assignmentCard } from "@/lib/teamsWebhook";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -48,10 +49,6 @@ interface Message {
   attachment_size: number | null;
 }
 
-interface AdminUser {
-  id: string;
-  email: string | null;
-}
 
 const STATUS_COLORS: Record<string, string> = {
   "Åpen": "bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-400",
@@ -163,17 +160,7 @@ export default function AdminSupportTicketPage() {
     },
   });
 
-  const { data: adminUsers = [] } = useQuery<AdminUser[]>({
-    queryKey: ["admin-users-list"],
-    staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from("user_roles")
-        .select("user_id, profiles(email)")
-        .eq("role", "master_admin");
-      return (data ?? []).map((r: any) => ({ id: r.user_id, email: r.profiles?.email ?? null }));
-    },
-  });
+  const { data: adminUsers = [] } = useAdminUsers();
 
   const updateMutation = useMutation({
     mutationFn: async (patch: Partial<Pick<Ticket, "status" | "priority" | "assignee_id">>) => {

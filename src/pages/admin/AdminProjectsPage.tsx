@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useAdminUsers } from "@/hooks/useAdminUsers";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Loader2 } from "lucide-react";
@@ -20,7 +21,6 @@ interface Task {
   verticals: { display_name: string; color: string | null } | null;
 }
 
-interface AdminUser { id: string; email: string | null; full_name: string | null }
 interface Vertical { id: string; display_name: string }
 
 const COLUMNS = [
@@ -72,17 +72,7 @@ export default function AdminProjectsPage() {
     },
   });
 
-  const { data: adminUsers = [] } = useQuery<AdminUser[]>({
-    queryKey: ["admin-users-list"],
-    staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from("user_roles")
-        .select("user_id, profiles(email, full_name)")
-        .eq("role", "master_admin");
-      return (data ?? []).map((r: any) => ({ id: r.user_id, email: r.profiles?.email ?? null, full_name: r.profiles?.full_name ?? null }));
-    },
-  });
+  const { data: adminUsers = [] } = useAdminUsers();
 
   const { data: verticals = [] } = useQuery<Vertical[]>({
     queryKey: ["verticals-list"],

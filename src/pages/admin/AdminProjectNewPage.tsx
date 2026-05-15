@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
+import { useAdminUsers } from "@/hooks/useAdminUsers";
 import { supabase } from "@/integrations/supabase/client";
 import { sendTeamsMessage, newTaskCard } from "@/lib/teamsWebhook";
 import { createWorkItem } from "@/lib/azureDevops";
@@ -38,14 +39,7 @@ export default function AdminProjectNewPage() {
   const [estimatedHours, setEstimatedHours] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const { data: adminUsers = [] } = useQuery<{ id: string; email: string | null; full_name: string | null }[]>({
-    queryKey: ["admin-users-list"],
-    staleTime: 5 * 60 * 1000,
-    queryFn: async () => {
-      const { data } = await (supabase as any).from("user_roles").select("user_id, profiles(email, full_name)").eq("role", "master_admin");
-      return (data ?? []).map((r: any) => ({ id: r.user_id, email: r.profiles?.email ?? null, full_name: r.profiles?.full_name ?? null }));
-    },
-  });
+  const { data: adminUsers = [] } = useAdminUsers();
 
   const { data: verticals = [] } = useQuery<{ id: string; display_name: string }[]>({
     queryKey: ["verticals-list"],

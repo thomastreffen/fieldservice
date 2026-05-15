@@ -31,6 +31,7 @@ import PlatformModulesPage from "@/pages/admin/PlatformModulesPage";
 import AdminSupportPage from "@/pages/admin/AdminSupportPage";
 import AdminSupportTicketPage from "@/pages/admin/AdminSupportTicketPage";
 import AdminSettingsIntegrationsPage from "@/pages/admin/AdminSettingsIntegrationsPage";
+import AdminSettingsTeamPage from "@/pages/admin/AdminSettingsTeamPage";
 import AdminProjectsPage from "@/pages/admin/AdminProjectsPage";
 import AdminProjectNewPage from "@/pages/admin/AdminProjectNewPage";
 import AdminProjectTaskPage from "@/pages/admin/AdminProjectTaskPage";
@@ -192,6 +193,7 @@ function AppRoutes() {
       <Route path="/admin/support" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminSupportPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/support/:id" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminSupportTicketPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/settings/integrations" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminSettingsIntegrationsPage /></MasterAdminLayout></ProtectedRoute>} />
+      <Route path="/admin/settings/team" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminSettingsTeamPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/projects" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminProjectsPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/projects/new" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminProjectNewPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/projects/:id" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminProjectTaskPage /></MasterAdminLayout></ProtectedRoute>} />
