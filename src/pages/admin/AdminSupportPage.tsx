@@ -145,8 +145,8 @@ export default function AdminSupportPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="alle">Alle kategorier</SelectItem>
-            {["Bug", "Spørsmål", "Funksjonsønske", "Annet"].map((c) => (
-              <SelectItem key={c} value={c}>{c}</SelectItem>
+            {["salg", "Bug", "Spørsmål", "Funksjonsønske", "Annet"].map((c) => (
+              <SelectItem key={c} value={c}>{c === "salg" ? "Salgshenvendelse" : c}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -205,11 +205,24 @@ export default function AdminSupportPage() {
               <span className={cn("text-[11px] font-medium px-2 py-0.5 rounded-full w-fit", PRIORITY_COLORS[ticket.priority] ?? "bg-muted text-muted-foreground")}>
                 {ticket.priority}
               </span>
-              <span className="text-xs text-muted-foreground">{ticket.category}</span>
+              <span className={cn(
+                "text-[11px] font-medium px-2 py-0.5 rounded-full w-fit",
+                ticket.category === "salg"
+                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400"
+                  : "text-muted-foreground"
+              )}>
+                {ticket.category === "salg" ? "Salgshenvendelse" : ticket.category}
+              </span>
               <div className="min-w-0">
-                <p className="text-xs font-medium truncate">{ticket.tenants?.name ?? "—"}</p>
-                {ticket.tenants?.verticals?.display_name && (
-                  <p className="text-[11px] text-muted-foreground truncate">{ticket.tenants.verticals.display_name}</p>
+                {ticket.tenants?.name ? (
+                  <>
+                    <p className="text-xs font-medium truncate">{ticket.tenants.name}</p>
+                    {ticket.tenants?.verticals?.display_name && (
+                      <p className="text-[11px] text-muted-foreground truncate">{ticket.tenants.verticals.display_name}</p>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-xs text-muted-foreground italic">Ny lead</p>
                 )}
               </div>
               <p className="text-xs text-muted-foreground">{formatDate(ticket.updated_at)}</p>

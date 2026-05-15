@@ -1,7 +1,7 @@
 import { ReactNode, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Layers } from "lucide-react";
+import { Menu, X, Layers, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
@@ -10,6 +10,30 @@ const navLinks = [
   { label: "Om oss", href: "/om-oss" },
   { label: "Kontakt", href: "/kontakt" },
 ];
+
+function FinalCta() {
+  return (
+    <section className="py-20 bg-gradient-to-br from-primary/10 via-primary/5 to-background border-t border-border">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
+        <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-4">
+          Klar til å effektivisere hverdagen?
+        </h2>
+        <p className="text-muted-foreground text-lg mb-8 max-w-xl mx-auto">
+          Bli med servicebedrifter som allerede bruker FieldService. Start gratis i dag — ingen kredittkort, ingen binding.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Button size="lg" asChild className="gap-2 h-12 px-8 text-base">
+            <Link to="/register">Start gratis demo <ArrowRight className="w-4 h-4" /></Link>
+          </Button>
+          <Button size="lg" variant="outline" asChild className="h-12 px-8 text-base">
+            <Link to="/kontakt">Ta kontakt med oss</Link>
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground mt-5">14 dager gratis · Ingen kredittkort · Data beholdes ved oppgradering</p>
+      </div>
+    </section>
+  );
+}
 
 export default function PublicLayout({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -49,8 +73,8 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
             <Button variant="ghost" size="sm" asChild>
               <Link to="/login">Logg inn</Link>
             </Button>
-            <Button size="sm" asChild>
-              <Link to="/register">Start gratis prøveperiode</Link>
+            <Button size="sm" asChild className="gap-1.5">
+              <Link to="/register"><ArrowRight className="w-3.5 h-3.5" />Start gratis</Link>
             </Button>
           </div>
 
@@ -80,15 +104,22 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
               <Button variant="outline" asChild className="w-full">
                 <Link to="/login" onClick={() => setMobileOpen(false)}>Logg inn</Link>
               </Button>
-              <Button asChild className="w-full">
-                <Link to="/register" onClick={() => setMobileOpen(false)}>Start gratis prøveperiode</Link>
+              <Button asChild className="w-full gap-2">
+                <Link to="/register" onClick={() => setMobileOpen(false)}>
+                  <ArrowRight className="w-4 h-4" />Start gratis demo
+                </Link>
               </Button>
             </div>
           </div>
         )}
       </header>
 
-      <main className="flex-1">{children}</main>
+      <main className="flex-1">
+        {children}
+      </main>
+
+      {/* Final CTA section above footer */}
+      <FinalCta />
 
       {/* Footer */}
       <footer className="border-t border-border bg-muted/30">
@@ -129,6 +160,11 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
                   Ta kontakt
                 </Link>
               </li>
+              <li>
+                <Link to="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  Logg inn
+                </Link>
+              </li>
             </ul>
           </div>
         </div>
@@ -139,6 +175,17 @@ export default function PublicLayout({ children }: { children: ReactNode }) {
           </div>
         </div>
       </footer>
+
+      {/* Sticky mobile bottom bar */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur border-t border-border px-4 py-3 flex gap-2"
+        style={{ paddingBottom: "calc(12px + env(safe-area-inset-bottom, 0px))" }}>
+        <Button asChild className="flex-1 gap-2 h-10">
+          <Link to="/register"><ArrowRight className="w-4 h-4" />Start gratis</Link>
+        </Button>
+        <Button asChild variant="outline" className="flex-1 h-10">
+          <Link to="/kontakt">Ta kontakt</Link>
+        </Button>
+      </div>
     </div>
   );
 }

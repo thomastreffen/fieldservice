@@ -190,15 +190,23 @@ export default function PricingPage() {
                       </ul>
                     )}
 
-                    <Button
-                      asChild
-                      className={cn("w-full gap-2 mt-auto", !isFeatured && "variant-outline")}
-                      variant={isFeatured ? "default" : "outline"}
-                    >
-                      <Link to="/register">
-                        Kom i gang <ArrowRight className="w-4 h-4" />
+                    <div className="mt-auto space-y-2">
+                      <Button
+                        asChild
+                        className="w-full gap-2"
+                        variant={isFeatured ? "default" : "outline"}
+                      >
+                        <Link to="/register">
+                          Start gratis demo <ArrowRight className="w-4 h-4" />
+                        </Link>
+                      </Button>
+                      <Link
+                        to="/kontakt"
+                        className="block text-center text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        Usikker? Ta kontakt med oss
                       </Link>
-                    </Button>
+                    </div>
                   </div>
                 );
               })}
