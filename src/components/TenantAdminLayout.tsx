@@ -369,7 +369,7 @@ function RoleSwitchLink() {
 }
 
 export default function TenantAdminLayout({ children }: { children: ReactNode }) {
-  const { signOut, user, isMasterAdmin, isTenantAdmin } = useAuth();
+  const { signOut, user, isMasterAdmin, isTenantAdmin, tenantId } = useAuth();
   const { hasModule } = useTenantModules();
   const { hasPermission } = usePermissions();
   const { hasVerticalModule, vertical } = useVertical();
