@@ -73,6 +73,45 @@ export function assignmentCard(
   );
 }
 
+function projectCard(summary: string, title: string, facts: Fact[], taskId: string) {
+  return {
+    "@type": "MessageCard",
+    "@context": "http://schema.org/extensions",
+    themeColor: "7C3AED",
+    summary,
+    sections: [{ activityTitle: title, facts }],
+    potentialAction: [{
+      "@type": "OpenUri",
+      name: "Åpne oppgave",
+      targets: [{ os: "default", uri: `${window.location.origin}/admin/projects/${taskId}` }],
+    }],
+  };
+}
+
+export function newTaskCard(
+  task: { id: string; title: string; type: string; priority: string },
+  assigneeEmail: string | null,
+  verticalName: string | null,
+) {
+  const facts: Fact[] = [
+    { name: "Tittel", value: task.title },
+    { name: "Type", value: task.type },
+    { name: "Prioritet", value: task.priority },
+  ];
+  if (assigneeEmail) facts.push({ name: "Tildelt", value: assigneeEmail });
+  if (verticalName) facts.push({ name: "Vertikal", value: verticalName });
+  return projectCard(`Ny oppgave: ${task.title}`, "Ny prosjektoppgave", facts, task.id);
+}
+
+export function taskStatusCard(task: { id: string; title: string }, newStatus: string) {
+  return projectCard(
+    `Oppgave oppdatert: ${task.title}`,
+    `Status endret til «${newStatus}»`,
+    [{ name: "Tittel", value: task.title }, { name: "Ny status", value: newStatus }],
+    task.id,
+  );
+}
+
 export function testCard() {
   return {
     "@type": "MessageCard",

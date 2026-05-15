@@ -31,6 +31,9 @@ import PlatformModulesPage from "@/pages/admin/PlatformModulesPage";
 import AdminSupportPage from "@/pages/admin/AdminSupportPage";
 import AdminSupportTicketPage from "@/pages/admin/AdminSupportTicketPage";
 import AdminSettingsIntegrationsPage from "@/pages/admin/AdminSettingsIntegrationsPage";
+import AdminProjectsPage from "@/pages/admin/AdminProjectsPage";
+import AdminProjectNewPage from "@/pages/admin/AdminProjectNewPage";
+import AdminProjectTaskPage from "@/pages/admin/AdminProjectTaskPage";
 import TenantDashboardPage from "@/pages/tenant/TenantDashboardPage";
 import TenantModulesPage from "@/pages/tenant/TenantModulesPage";
 import TenantIntegrationsPage from "@/pages/tenant/TenantIntegrationsPage";
@@ -189,6 +192,9 @@ function AppRoutes() {
       <Route path="/admin/support" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminSupportPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/support/:id" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminSupportTicketPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/settings/integrations" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminSettingsIntegrationsPage /></MasterAdminLayout></ProtectedRoute>} />
+      <Route path="/admin/projects" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminProjectsPage /></MasterAdminLayout></ProtectedRoute>} />
+      <Route path="/admin/projects/new" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminProjectNewPage /></MasterAdminLayout></ProtectedRoute>} />
+      <Route path="/admin/projects/:id" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminProjectTaskPage /></MasterAdminLayout></ProtectedRoute>} />
 
       {/* Tenant: Operative routes – open for all tenant members */}
       <Route path="/tenant" element={<TenantRoute><TenantDashboardPage /></TenantRoute>} />
