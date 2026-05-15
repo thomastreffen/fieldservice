@@ -139,10 +139,41 @@ export default function TenantDetailPage() {
     mutationFn: async (verticalId: string | null) => {
       const { error } = await (supabase as any).from("tenants").update({ vertical_id: verticalId }).eq("id", id!);
       if (error) throw error;
+
+      // Sync tenant_modules to the new vertical's default module configuration
+      const { data: allPlatformModules } = await (supabase as any)
+        .from("platform_modules").select("slug");
+
+      const enabledSlugs = new Set<string>();
+      if (verticalId) {
+        const { data: vModules } = await (supabase as any)
+          .from("vertical_modules")
+          .select("module_slug, enabled_by_default")
+          .eq("vertical_id", verticalId);
+        for (const m of (vModules ?? [])) {
+          if (m.enabled_by_default) enabledSlugs.add(m.module_slug);
+        }
+      }
+
+      for (const { slug } of (allPlatformModules ?? [])) {
+        const isActive = enabledSlugs.has(slug);
+        const existing = modules?.find((m) => m.module_name === slug);
+        if (existing) {
+          await (supabase as any).from("tenant_modules")
+            .update({ is_active: isActive, deactivated_at: !isActive ? new Date().toISOString() : null })
+            .eq("id", existing.id);
+        } else if (isActive) {
+          await (supabase as any).from("tenant_modules").insert({
+            tenant_id: id!, module_name: slug as any, is_active: true,
+            activated_at: new Date().toISOString(),
+          });
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tenant", id] });
-      toast.success("Vertikal oppdatert");
+      queryClient.invalidateQueries({ queryKey: ["tenant_modules", id] });
+      toast.success("Vertikal og moduler oppdatert");
     },
     onError: (e: Error) => toast.error(e.message),
   });
