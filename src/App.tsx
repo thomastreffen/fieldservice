@@ -30,6 +30,7 @@ import VerticalEditorPage from "@/pages/admin/VerticalEditorPage";
 import PlatformModulesPage from "@/pages/admin/PlatformModulesPage";
 import AdminSupportPage from "@/pages/admin/AdminSupportPage";
 import AdminSupportTicketPage from "@/pages/admin/AdminSupportTicketPage";
+import AdminSettingsIntegrationsPage from "@/pages/admin/AdminSettingsIntegrationsPage";
 import TenantDashboardPage from "@/pages/tenant/TenantDashboardPage";
 import TenantModulesPage from "@/pages/tenant/TenantModulesPage";
 import TenantIntegrationsPage from "@/pages/tenant/TenantIntegrationsPage";
@@ -187,6 +188,7 @@ function AppRoutes() {
       <Route path="/admin/platform-modules" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><PlatformModulesPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/support" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminSupportPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/support/:id" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminSupportTicketPage /></MasterAdminLayout></ProtectedRoute>} />
+      <Route path="/admin/settings/integrations" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminSettingsIntegrationsPage /></MasterAdminLayout></ProtectedRoute>} />
 
       {/* Tenant: Operative routes – open for all tenant members */}
       <Route path="/tenant" element={<TenantRoute><TenantDashboardPage /></TenantRoute>} />

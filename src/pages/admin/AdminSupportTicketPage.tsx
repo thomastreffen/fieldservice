@@ -2,6 +2,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
+import { sendTeamsMessage, statusChangeCard, assignmentCard } from "@/lib/teamsWebhook";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -71,6 +73,7 @@ export default function AdminSupportTicketPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const qc = useQueryClient();
+  const { data: settings } = usePlatformSettings();
 
   const [reply, setReply] = useState("");
   const [isInternal, setIsInternal] = useState(false);
@@ -130,10 +133,23 @@ export default function AdminSupportTicketPage() {
         .update(patch)
         .eq("id", id);
       if (error) throw error;
+      return patch;
     },
-    onSuccess: () => {
+    onSuccess: (patch) => {
       qc.invalidateQueries({ queryKey: ["admin-support-ticket", id] });
       qc.invalidateQueries({ queryKey: ["admin-support-tickets"] });
+      if (!settings?.teams_enabled || !settings.teams_webhook_url || !ticket) return;
+      const tenantName = ticket.tenants?.name ?? "";
+      if (patch?.status && settings.teams_notify_status_change) {
+        sendTeamsMessage(settings.teams_webhook_url, statusChangeCard(ticket, patch.status, tenantName))
+          .catch(() => { /* fire-and-forget */ });
+      }
+      if ("assignee_id" in patch && patch.assignee_id && settings.teams_notify_assignment) {
+        const assignee = adminUsers.find((u) => u.id === patch.assignee_id);
+        const email = assignee?.email ?? patch.assignee_id;
+        sendTeamsMessage(settings.teams_webhook_url, assignmentCard(ticket, email, tenantName))
+          .catch(() => { /* fire-and-forget */ });
+      }
     },
     onError: () => toast.error("Kunne ikke oppdatere ticket"),
   });

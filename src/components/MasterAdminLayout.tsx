@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
   Building2, LayoutDashboard, Plug, LogOut, Flame, Puzzle,
-  Menu, Shield, Bell, Search, ArrowRightLeft, Package, CreditCard, Clock, Layers, TicketCheck,
+  Menu, Shield, Bell, Search, ArrowRightLeft, Package, CreditCard, Clock, Layers, TicketCheck, Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -25,6 +25,7 @@ const navItems = [
   { label: "Integrasjoner", href: "/admin/integrations", icon: Plug },
   { label: "Tilgangsstyring", href: "/admin/access-control", icon: Shield },
   { label: "Support", href: "/admin/support", icon: TicketCheck },
+  { label: "Innstillinger", href: "/admin/settings/integrations", icon: Settings },
 ];
 
 function SidebarNav({ location, onNavigate }: { location: any; onNavigate?: () => void }) {
