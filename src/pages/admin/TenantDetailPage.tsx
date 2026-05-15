@@ -18,11 +18,19 @@ import { toast } from "sonner";
 import {
   ArrowLeft, Building2, Users, Puzzle, Plug, Shield, ExternalLink,
   CheckCircle2, XCircle, Clock, AlertCircle, Pause, Play, Mail, CalendarDays, TrendingUp,
+  Thermometer, Zap, Droplets, Layers,
 } from "lucide-react";
+
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
 
 type TenantStatus = Tables<"tenants">["status"];
+
+const VERTICAL_ICONS: Record<string, React.ReactNode> = {
+  thermometer: <Thermometer className="h-6 w-6" />,
+  zap: <Zap className="h-6 w-6" />,
+  droplets: <Droplets className="h-6 w-6" />,
+};
 
 const statusLabels: Record<TenantStatus, string> = {
   active: "Aktiv", trial: "Prøveperiode", inactive: "Inaktiv", suspended: "Suspendert",
@@ -93,6 +101,14 @@ export default function TenantDetailPage() {
     enabled: !!id,
   });
 
+  const { data: verticals } = useQuery({
+    queryKey: ["verticals"],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from("verticals").select("id, slug, display_name, description, icon, color").order("display_name");
+      return (data ?? []) as { id: string; slug: string; display_name: string; description: string | null; icon: string | null; color: string }[];
+    },
+  });
+
   const { data: roles } = useQuery({
     queryKey: ["tenant_roles", id],
     queryFn: async () => {
@@ -115,6 +131,18 @@ export default function TenantDetailPage() {
       queryClient.invalidateQueries({ queryKey: ["tenants"] });
       toast.success("Tenantstatus oppdatert");
       setStatusAction(null);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const verticalMutation = useMutation({
+    mutationFn: async (verticalId: string | null) => {
+      const { error } = await (supabase as any).from("tenants").update({ vertical_id: verticalId }).eq("id", id!);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tenant", id] });
+      toast.success("Vertikal oppdatert");
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -161,6 +189,8 @@ export default function TenantDetailPage() {
 
   const getModuleActive = (name: string) => modules?.find((m) => m.module_name === name)?.is_active ?? false;
   const uniqueUsers = new Set(roles?.assignments.map((a) => a.user_id) ?? []).size;
+  const tenantVerticalId = (tenant as any).vertical_id as string | null;
+  const currentVertical = verticals?.find((v) => v.id === tenantVerticalId) ?? null;
 
   return (
     <div className="space-y-6">
@@ -196,6 +226,40 @@ export default function TenantDetailPage() {
             </Button>
           ) : null}
         </div>
+      </div>
+
+      {/* Vertical */}
+      <div className="flex items-center gap-4 p-4 rounded-xl border border-border bg-card">
+        <div
+          className="h-12 w-12 rounded-xl flex items-center justify-center text-white shrink-0"
+          style={{ backgroundColor: currentVertical?.color || "#e2e8f0" }}
+        >
+          {currentVertical
+            ? (VERTICAL_ICONS[currentVertical.icon ?? ""] ?? <Layers className="h-6 w-6" />)
+            : <Layers className="h-6 w-6 text-muted-foreground" />}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs text-muted-foreground mb-0.5">Vertikal</p>
+          <p className="font-semibold text-sm">{currentVertical?.display_name ?? "Ikke satt"}</p>
+          {currentVertical?.description && (
+            <p className="text-xs text-muted-foreground truncate">{currentVertical.description}</p>
+          )}
+        </div>
+        <Select
+          value={tenantVerticalId ?? "none"}
+          onValueChange={(v) => verticalMutation.mutate(v === "none" ? null : v)}
+          disabled={verticalMutation.isPending}
+        >
+          <SelectTrigger className="w-44 h-8 shrink-0">
+            <SelectValue placeholder="Velg vertikal" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">Ingen vertikal</SelectItem>
+            {verticals?.map((v) => (
+              <SelectItem key={v.id} value={v.id}>{v.display_name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Quick stats */}
