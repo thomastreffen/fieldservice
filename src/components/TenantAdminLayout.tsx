@@ -4,12 +4,14 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTenantModules } from "@/hooks/useTenantModules";
 import { usePermissions } from "@/hooks/usePermissions";
 import { useVertical } from "@/hooks/useVertical";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard, Plug, LogOut, Flame, Puzzle, Users, Mail,
   CalendarDays, Contact, X, MoreHorizontal,
   Building2, TrendingUp, Shield, Briefcase, Cpu, FileText, ShieldAlert, ClipboardList, Inbox,
-  ArrowRightLeft, Wrench, Thermometer, Zap, Droplets, Layers, TicketCheck,
+  ArrowRightLeft, Wrench, Thermometer, Zap, Droplets, Layers, TicketCheck, Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -110,6 +112,70 @@ const navSections: { label: string; items: NavItem[] }[] = [
 
 // Items shown directly in the mobile bottom nav — excluded from the "Mer" sheet
 const BOTTOM_NAV_HREFS = new Set(["/tenant", "/tenant/crm/companies", "/tenant/crm/jobs", "/tenant/ressursplanlegger"]);
+
+function TrialBanner({ tenantId }: { tenantId: string }) {
+  const SESSION_KEY = "trial_banner_dismissed";
+  const [dismissed, setDismissed] = useState(() => sessionStorage.getItem(SESSION_KEY) === "1");
+
+  const { data } = useQuery({
+    queryKey: ["tenant_trial_status", tenantId],
+    enabled: !dismissed,
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from("tenants")
+        .select("status, trial_ends_at")
+        .eq("id", tenantId)
+        .single();
+      return data as { status: string; trial_ends_at: string | null } | null;
+    },
+  });
+
+  const isWelcome = sessionStorage.getItem("trial_welcome") === "1";
+
+  if (dismissed) return null;
+  if (!data || data.status !== "trial" || !data.trial_ends_at) return null;
+
+  const days = Math.ceil((new Date(data.trial_ends_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+
+  const colors =
+    days <= 3
+      ? "bg-red-50 border-red-200 text-red-800 dark:bg-red-950/30 dark:border-red-800 dark:text-red-300"
+      : days <= 7
+      ? "bg-yellow-50 border-yellow-200 text-yellow-800 dark:bg-yellow-950/30 dark:border-yellow-800 dark:text-yellow-300"
+      : "bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/30 dark:border-emerald-800 dark:text-emerald-300";
+
+  function dismiss() {
+    sessionStorage.setItem(SESSION_KEY, "1");
+    if (isWelcome) sessionStorage.removeItem("trial_welcome");
+    setDismissed(true);
+  }
+
+  return (
+    <div className={`border-b px-4 py-2 flex items-center gap-3 text-sm ${colors}`}>
+      <Clock className="w-4 h-4 shrink-0" />
+      {isWelcome ? (
+        <span className="flex-1">
+          Velkommen! Du har <strong>{days} dager</strong> igjen av din gratis prøveperiode.
+        </span>
+      ) : (
+        <span className="flex-1">
+          Prøveperiode: <strong>{days <= 0 ? "Utløpt" : `${days} dager igjen`}</strong>
+          {days > 0 &&
+            ` — utløper ${new Date(data.trial_ends_at).toLocaleDateString("nb-NO", { day: "numeric", month: "long" })}`}
+        </span>
+      )}
+      <Link
+        to="/upgrade"
+        className="font-semibold underline underline-offset-2 hover:opacity-80 whitespace-nowrap"
+      >
+        Oppgrader nå
+      </Link>
+      <button onClick={dismiss} className="hover:opacity-70 transition-opacity ml-1">
+        <X className="w-4 h-4" />
+      </button>
+    </div>
+  );
+}
 
 function SidebarNav({
   location,
@@ -319,6 +385,7 @@ export default function TenantAdminLayout({ children }: { children: ReactNode })
     return (
       <div style={cssVars} className="min-h-screen flex flex-col bg-background">
         <TopBar user={user} signOut={signOut} isMobile isMasterAdmin={isMasterAdmin} vertical={vertical} />
+        {tenantId && <TrialBanner tenantId={tenantId} />}
 
         <main
           className="flex-1 overflow-auto"
@@ -378,6 +445,7 @@ export default function TenantAdminLayout({ children }: { children: ReactNode })
       </aside>
       <div className="flex-1 flex flex-col min-w-0">
         <TopBar user={user} signOut={signOut} isMobile={false} isMasterAdmin={isMasterAdmin} vertical={vertical} />
+        {tenantId && <TrialBanner tenantId={tenantId} />}
         <main className="flex-1 overflow-auto">
           <div className="p-6 lg:p-8 max-w-[1400px] mx-auto">{children}</div>
         </main>

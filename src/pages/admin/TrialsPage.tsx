@@ -1,227 +1,212 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
-import { Clock, AlertTriangle, CheckCircle2, ArrowRight, CalendarPlus } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Clock, Users, AlertTriangle, CheckCircle2, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Link } from "react-router-dom";
 
-function daysUntil(date: string | null): number | null {
-  if (!date) return null;
-  return Math.ceil((new Date(date).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+type Tenant = {
+  id: string;
+  name: string;
+  slug: string;
+  status: string;
+  trial_ends_at: string | null;
+  vertical_id: string | null;
+  updated_at: string;
+  vertical: { id: string; slug: string; display_name: string; color: string | null } | null;
+};
+
+function daysLeft(dateStr: string | null): number | null {
+  if (!dateStr) return null;
+  return Math.ceil((new Date(dateStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 }
 
 export default function TrialsPage() {
-  const qc = useQueryClient();
+  const navigate = useNavigate();
+  const [verticalFilter, setVerticalFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  const { data: trials, isLoading } = useQuery({
-    queryKey: ["active_trials"],
+  const { data: tenants, isLoading } = useQuery<Tenant[]>({
+    queryKey: ["trial_tenants"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("tenant_subscriptions")
-        .select("*, saas_plans(*), tenants(*)")
-        .eq("status", "trial")
-        .order("trial_ends_at", { ascending: true });
+      const { data, error } = await (supabase as any)
+        .from("tenants")
+        .select("id, name, slug, status, trial_ends_at, vertical_id, updated_at, vertical:verticals(id, slug, display_name, color)")
+        .in("status", ["trial", "active"])
+        .order("trial_ends_at", { ascending: true, nullsFirst: false });
       if (error) throw error;
-      return data;
+      return data as Tenant[];
     },
   });
 
-  const { data: recentConverted } = useQuery({
-    queryKey: ["recent_conversions"],
+  const { data: userCounts } = useQuery<Record<string, number>>({
+    queryKey: ["tenant_user_counts"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("tenant_subscriptions")
-        .select("*, saas_plans(*), tenants(*)")
-        .eq("status", "active")
-        .not("converted_at", "is", null)
-        .order("converted_at", { ascending: false })
-        .limit(5);
+      const { data, error } = await (supabase as any).from("profiles").select("tenant_id");
       if (error) throw error;
-      return data;
+      const counts: Record<string, number> = {};
+      (data as { tenant_id: string }[]).forEach((p) => {
+        counts[p.tenant_id] = (counts[p.tenant_id] ?? 0) + 1;
+      });
+      return counts;
     },
   });
 
-  const extendMutation = useMutation({
-    mutationFn: async ({ id, days }: { id: string; days: number }) => {
-      const sub = trials?.find(t => t.id === id);
-      const currentEnd = sub?.trial_ends_at ? new Date(sub.trial_ends_at) : new Date();
-      const newEnd = new Date(Math.max(currentEnd.getTime(), Date.now()) + days * 86400000);
-      const { error } = await supabase.from("tenant_subscriptions").update({ trial_ends_at: newEnd.toISOString() }).eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["active_trials"] }); toast.success("Trial forlenget"); },
-    onError: (e: Error) => toast.error(e.message),
+  const verticals = Array.from(
+    new Map(
+      (tenants ?? [])
+        .filter((t) => t.vertical)
+        .map((t) => [t.vertical!.id, t.vertical!])
+    ).values()
+  );
+
+  function getStatusLabel(t: Tenant): "active_trial" | "expired" | "converted" {
+    if (t.status === "active") return "converted";
+    const d = daysLeft(t.trial_ends_at);
+    if (d !== null && d <= 0) return "expired";
+    return "active_trial";
+  }
+
+  const filtered = (tenants ?? []).filter((t) => {
+    if (verticalFilter !== "all" && t.vertical?.id !== verticalFilter) return false;
+    const sl = getStatusLabel(t);
+    if (statusFilter === "active_trial" && sl !== "active_trial") return false;
+    if (statusFilter === "expired" && sl !== "expired") return false;
+    if (statusFilter === "converted" && sl !== "converted") return false;
+    return true;
   });
-
-  const convertMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("tenant_subscriptions").update({
-        status: "active" as any,
-        converted_at: new Date().toISOString(),
-        billing_starts_at: new Date().toISOString(),
-      }).eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["active_trials"] });
-      qc.invalidateQueries({ queryKey: ["recent_conversions"] });
-      toast.success("Konvertert til betalt");
-    },
-    onError: (e: Error) => toast.error(e.message),
-  });
-
-  const expiring = trials?.filter(t => {
-    const d = daysUntil(t.trial_ends_at);
-    return d !== null && d <= 7;
-  }) || [];
-
-  const healthy = trials?.filter(t => {
-    const d = daysUntil(t.trial_ends_at);
-    return d === null || d > 7;
-  }) || [];
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Trials</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">{trials?.length || 0} aktive prøveperioder</p>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          {(tenants ?? []).filter((t) => t.status === "trial").length} aktive prøveperioder
+        </p>
       </div>
 
-      {/* KPI row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-border/50"><CardContent className="p-4 flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-yellow-100 dark:bg-yellow-900/30"><Clock className="w-4 h-4 text-yellow-600" /></div>
-          <div><p className="text-xl font-bold">{trials?.length || 0}</p><p className="text-xs text-muted-foreground">Aktive trials</p></div>
-        </CardContent></Card>
-        <Card className={cn("border-border/50", expiring.length > 0 && "border-orange-300")}><CardContent className="p-4 flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-900/30"><AlertTriangle className="w-4 h-4 text-orange-600" /></div>
-          <div><p className="text-xl font-bold">{expiring.length}</p><p className="text-xs text-muted-foreground">Utløper snart (≤7d)</p></div>
-        </CardContent></Card>
-        <Card className="border-border/50"><CardContent className="p-4 flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-accent/10"><CheckCircle2 className="w-4 h-4 text-accent" /></div>
-          <div><p className="text-xl font-bold">{recentConverted?.length || 0}</p><p className="text-xs text-muted-foreground">Nylig konvertert</p></div>
-        </CardContent></Card>
-        <Card className="border-border/50"><CardContent className="p-4 flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-muted"><CalendarPlus className="w-4 h-4 text-muted-foreground" /></div>
-          <div><p className="text-xl font-bold">–</p><p className="text-xs text-muted-foreground">Snitt konvertering</p></div>
-        </CardContent></Card>
+      {/* Filters */}
+      <div className="flex gap-3 flex-wrap">
+        <Select value={verticalFilter} onValueChange={setVerticalFilter}>
+          <SelectTrigger className="w-44">
+            <SelectValue placeholder="Alle vertikaler" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Alle vertikaler</SelectItem>
+            {verticals.map((v) => (
+              <SelectItem key={v.id} value={v.id}>{v.display_name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-44">
+            <SelectValue placeholder="Alle statuser" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Alle statuser</SelectItem>
+            <SelectItem value="active_trial">Aktiv trial</SelectItem>
+            <SelectItem value="expired">Utløpt</SelectItem>
+            <SelectItem value="converted">Konvertert</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
-      {/* Expiring soon */}
-      {expiring.length > 0 && (
-        <div className="space-y-3">
-          <h2 className="text-sm font-semibold flex items-center gap-2 text-orange-700 dark:text-orange-400">
-            <AlertTriangle className="w-4 h-4" /> Utløper snart
-          </h2>
-          {expiring.map((s: any) => {
-            const days = daysUntil(s.trial_ends_at)!;
+      {/* List */}
+      {isLoading ? (
+        <Card><CardContent className="p-8 text-center text-muted-foreground">Laster...</CardContent></Card>
+      ) : !filtered.length ? (
+        <Card><CardContent className="p-12 text-center">
+          <Clock className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
+          <p className="text-muted-foreground">Ingen treff</p>
+        </CardContent></Card>
+      ) : (
+        <div className="space-y-2">
+          {filtered.map((t) => {
+            const days = daysLeft(t.trial_ends_at);
+            const sl = getStatusLabel(t);
+            const userCount = userCounts?.[t.id] ?? 0;
             return (
-              <Card key={s.id} className="border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-950/20">
+              <Card
+                key={t.id}
+                className={cn(
+                  "border-border/50 hover:border-border transition-colors",
+                  sl === "expired" && "border-orange-200 dark:border-orange-800",
+                  sl === "converted" && "opacity-70"
+                )}
+              >
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/40 flex items-center justify-center text-orange-700 text-sm font-bold shrink-0">
-                        {(s.tenants?.name || "?").substring(0, 2).toUpperCase()}
+                      <div
+                        className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold shrink-0"
+                        style={{
+                          backgroundColor: t.vertical?.color ? t.vertical.color + "20" : undefined,
+                          color: t.vertical?.color ?? undefined,
+                        }}
+                      >
+                        {t.name.substring(0, 2).toUpperCase()}
                       </div>
-                      <div>
-                        <p className="font-medium text-sm">{s.tenants?.name}</p>
-                        <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
-                          <span>{s.saas_plans?.name}</span>
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm truncate">{t.name}</p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5 flex-wrap">
+                          {t.vertical && <span>{t.vertical.display_name}</span>}
                           <span>·</span>
-                          <span className="font-semibold text-orange-700 dark:text-orange-400">
-                            {days <= 0 ? "Utløpt!" : `${days} dager igjen`}
+                          <span className="flex items-center gap-1">
+                            <Users className="w-3 h-3" /> {userCount}
                           </span>
                           <span>·</span>
-                          <span>Utløper {new Date(s.trial_ends_at).toLocaleDateString("nb-NO")}</span>
+                          <span>
+                            Sist aktiv {new Date(t.updated_at).toLocaleDateString("nb-NO")}
+                          </span>
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Button size="sm" variant="outline" onClick={() => extendMutation.mutate({ id: s.id, days: 14 })}
-                        disabled={extendMutation.isPending}>Forleng</Button>
-                      <Button size="sm" onClick={() => convertMutation.mutate(s.id)}
-                        disabled={convertMutation.isPending}>Konverter</Button>
+
+                    <div className="flex items-center gap-3 shrink-0">
+                      {sl === "active_trial" && days !== null && (
+                        <span
+                          className={cn(
+                            "text-xs font-semibold",
+                            days <= 3
+                              ? "text-red-600 dark:text-red-400"
+                              : days <= 7
+                              ? "text-yellow-600 dark:text-yellow-400"
+                              : "text-emerald-600 dark:text-emerald-400"
+                          )}
+                        >
+                          {days} dager igjen
+                        </span>
+                      )}
+                      {sl === "expired" && (
+                        <Badge variant="outline" className="text-[10px] border-orange-300 text-orange-700 bg-orange-50 dark:bg-orange-950/20 dark:text-orange-400">
+                          <AlertTriangle className="w-3 h-3 mr-1" />Utløpt
+                        </Badge>
+                      )}
+                      {sl === "converted" && (
+                        <Badge variant="outline" className="text-[10px] bg-accent/10 text-accent border-accent/20">
+                          <CheckCircle2 className="w-3 h-3 mr-1" />Aktiv
+                        </Badge>
+                      )}
+                      {sl !== "converted" && (
+                        <Button
+                          size="sm"
+                          className="gap-1.5"
+                          onClick={() => navigate(`/admin/trials/${t.id}/convert`)}
+                        >
+                          Konverter til betalt <ArrowRight className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </CardContent>
               </Card>
             );
           })}
-        </div>
-      )}
-
-      {/* Active trials */}
-      <div className="space-y-3">
-        <h2 className="text-sm font-semibold">Aktive trials</h2>
-        {isLoading ? (
-          <Card><CardContent className="p-8 text-center text-muted-foreground">Laster...</CardContent></Card>
-        ) : !healthy.length && !expiring.length ? (
-          <Card><CardContent className="p-12 text-center">
-            <Clock className="w-10 h-10 mx-auto text-muted-foreground/40 mb-3" />
-            <p className="text-muted-foreground">Ingen aktive trials</p>
-          </CardContent></Card>
-        ) : healthy.map((s: any) => {
-          const days = daysUntil(s.trial_ends_at);
-          return (
-            <Card key={s.id} className="border-border/50 hover:border-border transition-colors">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary text-sm font-bold shrink-0">
-                      {(s.tenants?.name || "?").substring(0, 2).toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm">{s.tenants?.name}</p>
-                      <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
-                        <span>{s.saas_plans?.name}</span>
-                        {days !== null && <><span>·</span><span>{days} dager igjen</span></>}
-                        <span>·</span>
-                        <span>Startet {new Date(s.started_at).toLocaleDateString("nb-NO")}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Button size="sm" variant="outline" onClick={() => extendMutation.mutate({ id: s.id, days: 14 })}
-                      disabled={extendMutation.isPending}>Forleng</Button>
-                    <Button size="sm" variant="ghost" onClick={() => convertMutation.mutate(s.id)}
-                      disabled={convertMutation.isPending}>Konverter</Button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Recent conversions */}
-      {(recentConverted?.length ?? 0) > 0 && (
-        <div className="space-y-3">
-          <h2 className="text-sm font-semibold flex items-center gap-2 text-accent">
-            <CheckCircle2 className="w-4 h-4" /> Nylig konvertert
-          </h2>
-          {recentConverted?.map((s: any) => (
-            <Card key={s.id} className="border-border/50">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center text-accent text-xs font-bold">
-                      {(s.tenants?.name || "?").substring(0, 2).toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">{s.tenants?.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {s.saas_plans?.name} · Konvertert {new Date(s.converted_at).toLocaleDateString("nb-NO")}
-                      </p>
-                    </div>
-                  </div>
-                  <Badge variant="outline" className="bg-accent/10 text-accent border-accent/20 text-[10px]">Aktiv</Badge>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
         </div>
       )}
     </div>

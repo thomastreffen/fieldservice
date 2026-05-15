@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
   Building2, LayoutDashboard, Plug, LogOut, Flame, Puzzle,
-  Menu, Shield, Bell, Search, ArrowRightLeft, Package, CreditCard, Clock, Layers, TicketCheck, Settings, Kanban, Users,
+  Menu, Shield, Bell, Search, ArrowRightLeft, Package, CreditCard, Clock, Layers, TicketCheck, Settings, Kanban, Users, Globe,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -26,6 +26,7 @@ const navItems = [
   { label: "Tilgangsstyring", href: "/admin/access-control", icon: Shield },
   { label: "Support", href: "/admin/support", icon: TicketCheck },
   { label: "Prosjekter", href: "/admin/projects", icon: Kanban },
+  { label: "CMS", href: "/admin/cms", icon: Globe },
   { label: "Team", href: "/admin/settings/team", icon: Users },
   { label: "Innstillinger", href: "/admin/settings/integrations", icon: Settings },
 ];

@@ -15,6 +15,15 @@ import ForgotPasswordPage from "@/pages/ForgotPasswordPage";
 import ResetPasswordPage from "@/pages/ResetPasswordPage";
 import RoleSelectorPage from "@/pages/RoleSelectorPage";
 import DemoSignupPage from "@/pages/DemoSignupPage";
+import RegisterPage from "@/pages/RegisterPage";
+import AdminTrialConvertPage from "@/pages/admin/AdminTrialConvertPage";
+import LandingPage from "@/pages/public/LandingPage";
+import PricingPage from "@/pages/public/PricingPage";
+import VerticalPage from "@/pages/public/VerticalPage";
+import VerticalIndexPage from "@/pages/public/VerticalIndexPage";
+import AboutPage from "@/pages/public/AboutPage";
+import ContactPage from "@/pages/public/ContactPage";
+import AdminCmsPage from "@/pages/admin/AdminCmsPage";
 import DashboardPage from "@/pages/admin/DashboardPage";
 import TenantsPage from "@/pages/admin/TenantsPage";
 import ModulesPage from "@/pages/admin/ModulesPage";
@@ -169,7 +178,15 @@ function AppRoutes() {
 
   return (
     <Routes>
+      {/* Public marketing routes — no auth required */}
+      <Route path="/priser" element={<PricingPage />} />
+      <Route path="/bransjer" element={<VerticalIndexPage />} />
+      <Route path="/bransjer/:slug" element={<VerticalPage />} />
+      <Route path="/om-oss" element={<AboutPage />} />
+      <Route path="/kontakt" element={<ContactPage />} />
+
       <Route path="/login" element={user ? <Navigate to={getHomeRedirect()} replace /> : <LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
       <Route path="/demo" element={<DemoSignupPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -188,6 +205,7 @@ function AppRoutes() {
       <Route path="/admin/plans/:id" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminPlanFormPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/subscriptions" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><SubscriptionsPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/trials" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><TrialsPage /></MasterAdminLayout></ProtectedRoute>} />
+      <Route path="/admin/trials/:id/convert" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminTrialConvertPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/verticals" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><VerticalsPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/verticals/new" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><VerticalEditPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/verticals/:id" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><VerticalEditorPage /></MasterAdminLayout></ProtectedRoute>} />
@@ -200,6 +218,7 @@ function AppRoutes() {
       <Route path="/admin/projects" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminProjectsPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/projects/new" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminProjectNewPage /></MasterAdminLayout></ProtectedRoute>} />
       <Route path="/admin/projects/:id" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminProjectTaskPage /></MasterAdminLayout></ProtectedRoute>} />
+      <Route path="/admin/cms" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><AdminCmsPage /></MasterAdminLayout></ProtectedRoute>} />
 
       {/* Tenant: Operative routes – open for all tenant members */}
       <Route path="/tenant" element={<TenantRoute><TenantDashboardPage /></TenantRoute>} />
@@ -257,7 +276,7 @@ function AppRoutes() {
       {/* Public form route - no auth required */}
       <Route path="/forms/:publishKey" element={<PublicFormPage />} />
 
-      <Route path="/" element={<Navigate to={getHomeRedirect()} replace />} />
+      <Route path="/" element={user ? <Navigate to={getHomeRedirect()} replace /> : <LandingPage />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
