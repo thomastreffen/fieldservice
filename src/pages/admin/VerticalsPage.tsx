@@ -84,7 +84,7 @@ export default function VerticalsPage() {
             <div
               key={v.id}
               className="flex items-center gap-4 px-5 py-4 border-b border-border last:border-b-0 hover:bg-muted/20 transition-colors cursor-pointer group"
-              onClick={() => navigate(`/admin/verticals/${v.id}/edit`)}
+              onClick={() => navigate(`/admin/verticals/${v.id}`)}
             >
               <div
                 className="h-10 w-10 rounded-xl flex items-center justify-center text-white shrink-0"
