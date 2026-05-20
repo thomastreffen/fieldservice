@@ -2674,7 +2674,7 @@ export type Database = {
         | "paused"
         | "expired"
         | "cancelled"
-      tenant_status: "active" | "inactive" | "trial" | "suspended" | "internal"
+      tenant_status: "active" | "inactive" | "trial" | "suspended"
       visit_status:
         | "planned"
         | "confirmed"
@@ -2919,7 +2919,7 @@ export const Constants = {
         "expired",
         "cancelled",
       ],
-      tenant_status: ["active", "inactive", "trial", "suspended", "internal"],
+      tenant_status: ["active", "inactive", "trial", "suspended"],
       visit_status: [
         "planned",
         "confirmed",
