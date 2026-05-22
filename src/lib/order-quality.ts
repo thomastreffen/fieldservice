@@ -1,5 +1,5 @@
 // Quality score engine for order form submissions
-// Now uses dynamic field analysis instead of hardcoded field keys
+// Uses dynamic field analysis instead of hardcoded field keys
 
 export type QualityLevel = "green" | "yellow" | "red";
 
@@ -22,9 +22,6 @@ const QUALITY_LABELS: Record<QualityLevel, { label: string; color: string; dotCl
 
 export { QUALITY_LABELS };
 
-/**
- * Field descriptor from the template, used for dynamic quality assessment
- */
 interface FieldDescriptor {
   field_key: string;
   label: string;
@@ -32,13 +29,6 @@ interface FieldDescriptor {
   is_required: boolean;
 }
 
-/**
- * Compute quality score dynamically based on actual template fields and submitted values.
- *
- * @param values - Record<field_key, value> of submitted answers
- * @param attachments - Array of attachment metadata
- * @param templateFields - Optional array of field descriptors from the template
- */
 export function computeQualityScore(
   values: Record<string, any>,
   attachments: { category?: string; file_name?: string }[] = [],
@@ -47,7 +37,6 @@ export function computeQualityScore(
   const issues: QualityIssue[] = [];
 
   if (templateFields && templateFields.length > 0) {
-    // Dynamic mode: check required fields from the template definition
     for (const field of templateFields) {
       if (!field.is_required) continue;
       const val = values[field.field_key];
@@ -60,15 +49,11 @@ export function computeQualityScore(
       }
     }
   } else {
-    // Fallback: try to detect common field patterns by key prefix matching
     const fieldKeys = Object.keys(values);
-
-    // Check if customer/company info exists (look for common patterns)
     const hasCustomerInfo = fieldKeys.some(k =>
       k.startsWith("firmanavn") || k.startsWith("kundenavn") || k.startsWith("kunde_")
     );
     if (!hasCustomerInfo && fieldKeys.length > 0) {
-      // Only flag if the form has some fields but no customer identifier
       const hasAnyFilledField = fieldKeys.some(k => {
         const v = values[k];
         return v != null && v !== "";
@@ -79,17 +64,13 @@ export function computeQualityScore(
     }
   }
 
-  // Check if file upload fields have matching attachments
   if (templateFields) {
     const fileFields = templateFields.filter(f =>
       f.field_type === "file_upload" || f.field_type === "image_upload"
     );
-    // Only flag required file fields that are missing attachments
     for (const ff of fileFields) {
       if (!ff.is_required) continue;
-      const hasAttachment = attachments.some(a =>
-        a.file_name || a.category
-      );
+      const hasAttachment = attachments.some(a => a.file_name || a.category);
       if (!hasAttachment) {
         issues.push({
           severity: "warning",
@@ -100,7 +81,6 @@ export function computeQualityScore(
     }
   }
 
-  // Compute score
   const errorCount = issues.filter(i => i.severity === "error").length;
   const warningCount = issues.filter(i => i.severity === "warning").length;
 
@@ -112,7 +92,6 @@ export function computeQualityScore(
   return { score, issues };
 }
 
-/** Standard missing info checklist items */
 export const MISSING_INFO_OPTIONS = [
   "Mangler tegninger",
   "Mangler bilder",
