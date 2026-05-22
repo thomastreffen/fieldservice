@@ -97,11 +97,8 @@ export function VerticalProvider({ children }: { children: ReactNode }) {
     verticalModules: data?.modules ?? [],
     loading: isLoading,
     getLabel: (key: string) => mergedLabels[key] ?? DEFAULT_LABELS[key] ?? key,
-    hasVerticalModule: (slug: string) => {
-      if (!data?.modules?.length) return true;
-      const mod = data.modules.find((m) => m.module_slug === slug);
-      return mod ? mod.enabled_by_default : true;
-    },
+    // enabled_by_default controls auto-activation, not sidebar visibility — always permissive
+    hasVerticalModule: () => true,
   }), [data, isLoading, mergedLabels]);
 
   return (
