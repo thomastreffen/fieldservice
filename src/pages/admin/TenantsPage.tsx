@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,7 +22,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { toast } from "sonner";
 import {
-  Plus, Building2, Pencil, Trash2, Users, Plug, ArrowRight, Search,
+  Plus, Building2, Pencil, Trash2, Users, Plug, ArrowRight, Search, LogIn,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Tables } from "@/integrations/supabase/types";
@@ -59,6 +60,8 @@ const emptyForm: TenantFormData = { name: "", slug: "", domain: "", status: "tri
 
 export default function TenantsPage() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const { setTenantOverride } = useAuth();
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -254,6 +257,18 @@ export default function TenantsPage() {
                     <ArrowRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                   </Link>
                   <div className="flex items-center gap-1 shrink-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 gap-1.5 text-xs"
+                      onClick={() => {
+                        setTenantOverride(t.id);
+                        navigate("/tenant");
+                      }}
+                    >
+                      <LogIn className="w-3.5 h-3.5" />
+                      Bytt til
+                    </Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(t)}>
                       <Pencil className="w-3.5 h-3.5" />
                     </Button>

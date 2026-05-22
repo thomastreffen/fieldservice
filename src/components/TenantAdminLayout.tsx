@@ -1,5 +1,5 @@
 import { ReactNode, useMemo, useState, CSSProperties } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { useTenantModules } from "@/hooks/useTenantModules";
 import { usePermissions } from "@/hooks/usePermissions";
@@ -397,7 +397,8 @@ function RoleSwitchLink() {
 }
 
 export default function TenantAdminLayout({ children }: { children: ReactNode }) {
-  const { signOut, user, isMasterAdmin, isTenantAdmin, tenantId } = useAuth();
+  const { signOut, user, isMasterAdmin, isTenantAdmin, tenantId, isImpersonating, clearTenantOverride } = useAuth();
+  const navigate = useNavigate();
   const { hasModule } = useTenantModules();
   const { hasPermission } = usePermissions();
   const { hasVerticalModule, vertical } = useVertical();
@@ -417,10 +418,10 @@ export default function TenantAdminLayout({ children }: { children: ReactNode })
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from("tenants")
-        .select("status, trial_ends_at")
+        .select("status, trial_ends_at, name")
         .eq("id", tenantId)
         .single();
-      return data as { status: string; trial_ends_at: string | null } | null;
+      return data as { status: string; trial_ends_at: string | null; name: string | null } | null;
     },
   });
 
@@ -453,6 +454,20 @@ export default function TenantAdminLayout({ children }: { children: ReactNode })
                 <X className="h-4 w-4" />
               </Button>
             </div>
+            {isImpersonating && tenantMeta?.name && (
+              <div className="bg-amber-50 border-b border-amber-200 dark:bg-amber-950/30 dark:border-amber-800 px-4 py-2 shrink-0">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-0.5">
+                  Viser tenant
+                </p>
+                <p className="text-xs font-semibold text-amber-900 dark:text-amber-200">{tenantMeta.name}</p>
+                <button
+                  onClick={() => { clearTenantOverride(); setMoreOpen(false); navigate("/admin/tenants"); }}
+                  className="text-[10px] text-amber-600 dark:text-amber-400 hover:underline mt-0.5"
+                >
+                  Tilbake til admin
+                </button>
+              </div>
+            )}
             <div className="overflow-y-auto flex-1">
               <SidebarNav
                 location={location}
@@ -486,6 +501,20 @@ export default function TenantAdminLayout({ children }: { children: ReactNode })
             )}
           </div>
         </div>
+        {isImpersonating && tenantMeta?.name && (
+          <div className="bg-amber-50 border-b border-amber-200 dark:bg-amber-950/30 dark:border-amber-800 px-3 py-2">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400 mb-0.5">
+              Viser tenant
+            </p>
+            <p className="text-xs font-semibold text-amber-900 dark:text-amber-200 truncate">{tenantMeta.name}</p>
+            <button
+              onClick={() => { clearTenantOverride(); navigate("/admin/tenants"); }}
+              className="text-[10px] text-amber-600 dark:text-amber-400 hover:underline mt-0.5"
+            >
+              Tilbake til admin
+            </button>
+          </div>
+        )}
         <SidebarNav location={location} hasModule={hasModule} hasPermission={hasPermission} hasVerticalModule={hasVerticalModule} isAdmin={isAdmin} onlyHrefs={onlyHrefs} />
         <RoleSwitchLink />
       </aside>

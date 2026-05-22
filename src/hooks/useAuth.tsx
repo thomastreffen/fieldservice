@@ -4,6 +4,8 @@ import type { User, Session } from "@supabase/supabase-js";
 
 type AppRole = "master_admin" | "tenant_admin" | "user";
 
+const TENANT_OVERRIDE_KEY = "admin_tenant_override";
+
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -12,8 +14,11 @@ interface AuthContextType {
   tenantId: string | null;
   isMasterAdmin: boolean;
   isTenantAdmin: boolean;
+  isImpersonating: boolean;
   isPasswordRecovery: boolean;
   clearPasswordRecovery: () => void;
+  setTenantOverride: (id: string) => void;
+  clearTenantOverride: () => void;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -26,12 +31,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [roles, setRoles] = useState<AppRole[]>([]);
-  const [tenantId, setTenantId] = useState<string | null>(null);
+  const [profileTenantId, setProfileTenantId] = useState<string | null>(null);
+  const [overrideTenantId, setOverrideTenantId] = useState<string | null>(
+    () => localStorage.getItem(TENANT_OVERRIDE_KEY)
+  );
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(() => {
-    // Check URL hash immediately on mount for recovery token
     const hash = window.location.hash;
     return hash.includes("type=recovery") || hash.includes("type=magiclink");
   });
+
+  const tenantId = overrideTenantId ?? profileTenantId;
 
   const fetchUserMeta = async (userId: string) => {
     try {
@@ -43,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setRoles(rolesResult.data.map((r) => r.role as AppRole));
       }
       if (profileResult.data) {
-        setTenantId(profileResult.data.tenant_id);
+        setProfileTenantId(profileResult.data.tenant_id);
       }
     } finally {
       setLoading(false);
@@ -61,15 +70,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setIsPasswordRecovery(true);
         }
         if (session?.user) {
-          // Use setTimeout to avoid blocking the auth callback, but don't set loading=false here
-          // fetchUserMeta will set loading=false when done
           if (!initialLoad) {
             setLoading(true);
           }
           setTimeout(() => fetchUserMeta(session.user.id), 0);
         } else {
           setRoles([]);
-          setTenantId(null);
+          setProfileTenantId(null);
           setLoading(false);
         }
       }
@@ -91,6 +98,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const clearPasswordRecovery = () => setIsPasswordRecovery(false);
 
+  const setTenantOverride = (id: string) => {
+    localStorage.setItem(TENANT_OVERRIDE_KEY, id);
+    setOverrideTenantId(id);
+  };
+
+  const clearTenantOverride = () => {
+    localStorage.removeItem(TENANT_OVERRIDE_KEY);
+    setOverrideTenantId(null);
+  };
+
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error: error ? new Error(error.message) : null };
@@ -106,6 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
+    clearTenantOverride();
     await supabase.auth.signOut();
   };
 
@@ -119,8 +137,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         tenantId,
         isMasterAdmin: roles.includes("master_admin"),
         isTenantAdmin: roles.includes("tenant_admin"),
+        isImpersonating: overrideTenantId !== null,
         isPasswordRecovery,
         clearPasswordRecovery,
+        setTenantOverride,
+        clearTenantOverride,
         signIn,
         signUp,
         signOut,
