@@ -97,6 +97,7 @@ import TodayPage from "@/pages/technician/TodayPage";
 import TechJobDetailPage from "@/pages/technician/TechJobDetailPage";
 import { supabase } from "@/integrations/supabase/client";
 import { completePendingRegistration } from "@/lib/pendingRegistration";
+import { hmsRoutes } from "@/modules/hms-hr/routes";
 
 const queryClient = new QueryClient();
 
@@ -284,6 +285,9 @@ function AppRoutes() {
       <Route path="/tenant/templates/new" element={<TenantRoute module="crm" permission="module.crm"><TemplateBuilderPage /></TenantRoute>} />
       <Route path="/tenant/templates/submissions" element={<TenantRoute module="crm" permission="module.crm"><FormSubmissionsPage /></TenantRoute>} />
       <Route path="/tenant/templates/:id" element={<TenantRoute module="crm" permission="module.crm"><TemplateBuilderPage /></TenantRoute>} />
+
+      {/* HMS & HR routes – module "hms_hr", permission gated per route */}
+      {hmsRoutes}
 
       {/* Tenant: Admin-only routes – require tenant_admin role */}
       <Route path="/tenant/modules" element={<TenantAdminRoute><TenantModulesPage /></TenantAdminRoute>} />

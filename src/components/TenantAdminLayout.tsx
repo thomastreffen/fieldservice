@@ -12,6 +12,7 @@ import {
   CalendarDays, Contact, X, MoreHorizontal,
   Building2, TrendingUp, Shield, Briefcase, Cpu, FileText, ShieldAlert, ClipboardList, Inbox,
   ArrowRightLeft, Wrench, Thermometer, Zap, Droplets, Layers, TicketCheck, Clock,
+  AlertTriangle, BookOpen, Upload, FileBarChart2, Tag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -92,6 +93,20 @@ const navSections: { label: string; items: NavItem[] }[] = [
       { label: "Mine oppdrag", href: "/tenant/mine-oppdrag", icon: Wrench },
       { label: "Postkontoret", href: "/tenant/postkontoret", icon: Mail, module: "postkontoret", permission: "module.postkontoret" },
       { label: "Ressursplanlegger", href: "/tenant/ressursplanlegger", icon: CalendarDays, module: "ressursplanlegger", permission: "module.ressursplanlegger" },
+    ],
+  },
+  {
+    label: "HMS & HR",
+    items: [
+      { label: "Oversikt", href: "/hms", icon: Shield, module: "hms_hr", permission: "hms.view" },
+      { label: "Avvik", href: "/hms/incidents", icon: AlertTriangle, module: "hms_hr", permission: "hms.view" },
+      { label: "SJA / Sjekklister", href: "/hms/submissions", icon: ClipboardList, module: "hms_hr", permission: "hms.view" },
+      { label: "Håndbøker", href: "/hms/handbooks", icon: BookOpen, module: "hms_hr", permission: "hms.view" },
+      { label: "Arbeidstidsvarsler", href: "/hms/aml", icon: Clock, module: "hms_hr", permission: "hms.manage" },
+      { label: "Overtid", href: "/hms/overtime", icon: FileText, module: "hms_hr", permission: "hms.manage" },
+      { label: "Import", href: "/hms/import", icon: Upload, module: "hms_hr", permission: "hms.manage" },
+      { label: "Rapporter", href: "/hms/reports", icon: FileBarChart2, module: "hms_hr", permission: "hms.manage" },
+      { label: "Bransjeområder", href: "/hms/areas", icon: Tag, module: "hms_hr", permission: "hms.view" },
     ],
   },
   {
