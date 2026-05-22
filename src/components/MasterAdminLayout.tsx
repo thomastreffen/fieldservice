@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
   Building2, LayoutDashboard, Plug, LogOut, Flame, Puzzle,
-  Menu, Shield, Bell, Search, ArrowRightLeft, Package, CreditCard, Clock, Layers, TicketCheck, Settings, Kanban, Users, Globe, TrendingUp,
+  Menu, Shield, Bell, Search, ArrowRightLeft, Package, CreditCard, Clock, Layers, TicketCheck, Settings, Kanban, Users, Globe, TrendingUp, ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -30,6 +30,7 @@ const navItems = [
   { label: "CMS", href: "/admin/cms", icon: Globe },
   { label: "Team", href: "/admin/settings/team", icon: Users },
   { label: "Innstillinger", href: "/admin/settings/integrations", icon: Settings },
+  { label: "Bestillingsskjemaer", href: "/admin/order-forms", icon: ClipboardList },
 ];
 
 function SidebarNav({ location, onNavigate }: { location: any; onNavigate?: () => void }) {

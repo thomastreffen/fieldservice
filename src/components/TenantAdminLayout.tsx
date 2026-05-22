@@ -93,6 +93,7 @@ const navSections: { label: string; items: NavItem[] }[] = [
       { label: "Mine oppdrag", href: "/tenant/mine-oppdrag", icon: Wrench },
       { label: "Postkontoret", href: "/tenant/postkontoret", icon: Mail, module: "postkontoret", permission: "module.postkontoret" },
       { label: "Ressursplanlegger", href: "/tenant/ressursplanlegger", icon: CalendarDays, module: "ressursplanlegger", permission: "module.ressursplanlegger" },
+      { label: "Bestillinger", href: "/orders", icon: ClipboardList, module: "order_forms" },
     ],
   },
   {

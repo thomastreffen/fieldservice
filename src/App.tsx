@@ -89,6 +89,15 @@ import TemplatesPage from "@/pages/tenant/TemplatesPage";
 import TemplateBuilderPage from "@/pages/tenant/TemplateBuilderPage";
 import FormSubmissionsPage from "@/pages/tenant/FormSubmissionsPage";
 import PublicFormPage from "@/pages/PublicFormPage";
+import OrderFormTemplatesPage from "@/pages/OrderFormTemplatesPage";
+import OrderFormBuilderPage from "@/pages/OrderFormBuilderPage";
+import OrderFormSubmitPage from "@/pages/OrderFormSubmitPage";
+import OrderFormsPage from "@/pages/OrderFormsPage";
+import OrderFormDetailPage from "@/pages/OrderFormDetailPage";
+import OrderConvertPage from "@/pages/OrderConvertPage";
+import OrderFormsCatalogPage from "@/pages/OrderFormsCatalogPage";
+import OrderFormPublicPage from "@/pages/OrderFormPublicPage";
+import OrderTrackingPage from "@/pages/OrderTrackingPage";
 import NotFound from "@/pages/NotFound";
 import NoTenantPage from "@/pages/NoTenantPage";
 import TechnicianDashboardPage from "@/pages/tenant/TechnicianDashboardPage";
@@ -304,6 +313,21 @@ function AppRoutes() {
 
       {/* Public form route - no auth required */}
       <Route path="/forms/:publishKey" element={<PublicFormPage />} />
+
+      {/* Order forms public routes – no auth required */}
+      <Route path="/bestilling" element={<OrderFormsCatalogPage />} />
+      <Route path="/bestilling/status/:token" element={<OrderTrackingPage />} />
+      <Route path="/bestilling/:slug" element={<OrderFormPublicPage />} />
+
+      {/* Order forms authenticated routes */}
+      <Route path="/orders" element={<TenantRoute module="order_forms"><OrderFormsPage /></TenantRoute>} />
+      <Route path="/orders/new/:slug" element={<TenantRoute module="order_forms"><OrderFormSubmitPage /></TenantRoute>} />
+      <Route path="/orders/:id/convert" element={<TenantRoute module="order_forms"><OrderConvertPage /></TenantRoute>} />
+      <Route path="/orders/:id" element={<TenantRoute module="order_forms"><OrderFormDetailPage /></TenantRoute>} />
+
+      {/* Order form admin routes */}
+      <Route path="/admin/order-forms" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><OrderFormTemplatesPage /></MasterAdminLayout></ProtectedRoute>} />
+      <Route path="/admin/order-forms/:id" element={<ProtectedRoute requireRole="master_admin"><MasterAdminLayout><OrderFormBuilderPage /></MasterAdminLayout></ProtectedRoute>} />
 
       <Route path="/" element={user ? <Navigate to={getHomeRedirect()} replace /> : <LandingPage />} />
       <Route path="*" element={<NotFound />} />
