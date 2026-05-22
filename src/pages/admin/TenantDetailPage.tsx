@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,6 +49,8 @@ const ENTITY_LABELS: Record<string, string> = {
 export default function TenantDetailPage() {
   const { id } = useParams<{ id: string }>();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const { setTenantOverride } = useAuth();
   const [statusAction, setStatusAction] = useState<TenantStatus | null>(null);
 
   // ── Queries ──────────────────────────────────────────────────────────────
@@ -301,7 +304,7 @@ export default function TenantDetailPage() {
               </Button>
             ) : null}
 
-            <Button variant="outline" size="sm" onClick={() => toast.info("Impersonering er ikke implementert ennå")}>
+            <Button variant="outline" size="sm" onClick={() => { setTenantOverride(id!); navigate("/overview"); }}>
               <Eye className="w-3.5 h-3.5 mr-1.5" /> Impersoner
             </Button>
           </div>
