@@ -304,7 +304,7 @@ export default function TenantDetailPage() {
               </Button>
             ) : null}
 
-            <Button variant="outline" size="sm" onClick={() => { setTenantOverride(id!); navigate("/overview"); }}>
+            <Button variant="outline" size="sm" onClick={() => { setTenantOverride(id!); navigate("/tenant"); }}>
               <Eye className="w-3.5 h-3.5 mr-1.5" /> Impersoner
             </Button>
           </div>
